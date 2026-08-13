@@ -271,303 +271,200 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'larder-flow:items:v2';
+    /**
+ * ==========================================
+ * 1. STATE MANAGEMENT STORE (Pub-Sub Pattern)
+ * ==========================================
+ */
+class Store {
+  constructor(initialState = {}) {
+    this.state = initialState;
+    this.listeners = new Map();
+  }
 
-    // Default Practical Pantry Seed Data
-    const seedItems = [
-      { id: 'eggs', item: 'Eggs', location: 'Fridge', category: 'Dairy', qtyMode: 'exact', qty: '12 eggs', status: 'OK', inCart: false, notes: 'Pasture raised' },
-      { id: 'olive-oil', item: 'Extra Virgin Olive Oil', location: 'Pantry', category: 'Spices & Condiments', qtyMode: 'qualitative', qty: 'Low', status: 'Low', inCart: false, notes: '' },
-      { id: 'tuna-cans', item: 'Albacore Tuna', location: 'Pantry', category: 'Canned & Jarred', qtyMode: 'exact', qty: '3 cans', status: 'OK', inCart: false, notes: '' },
-      { id: 'milk', item: 'Whole Milk', location: 'Fridge', category: 'Dairy', qtyMode: 'qualitative', qty: 'Out', status: 'Out', inCart: false, notes: '' },
-      { id: 'bananas', item: 'Bananas', location: 'Fresh Produce', category: 'Produce', qtyMode: 'exact', qty: '1 bunch', status: 'Low', inCart: false, notes: '' }
-    ];
+  /**
+   * Get a snapshot of current state
+   */
+  getState() {
+    return { ...this.state };
+  }
 
-    let items = loadStore();
-    let activeFilter = 'shopping';
-    let currentLevel = 'Half';
-    let editingId = null;
-
-    function keyOf(name) { return String(name || '').trim().toLowerCase(); }
-
-    function loadStore() {
-      try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : seedItems;
-      } catch { return seedItems; }
+  /**
+   * Subscribe to state key updates
+   * @param {string} key - The state property to listen to (or '*' for all)
+   * @param {Function} callback - Executed on state change
+   */
+  subscribe(key, callback) {
+    if (!this.listeners.has(key)) {
+      this.listeners.set(key, new Set());
     }
+    this.listeners.get(key).add(callback);
 
-    function saveStore() {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
-    }
+    // Return unsubscribe function
+    return () => this.listeners.get(key).delete(callback);
+  }
 
-    // Rules-Based Status Calculation (Explicit text, non-color dependent)
-    function computeStatus(item) {
-      if (item.qtyMode === 'qualitative') {
-        if (item.qty === 'Out') return 'Out';
-        if (item.qty === 'Low') return 'Low';
-        return 'OK';
+  /**
+   * Update state and notify subscribers
+   * @param {Object} partialState - State slice to update
+   */
+  setState(partialState) {
+    const prevState = { ...this.state };
+    this.state = { ...this.state, ...partialState };
+
+    // Notify key-specific listeners
+    Object.keys(partialState).forEach((key) => {
+      if (prevState[key] !== this.state[key] && this.listeners.has(key)) {
+        this.listeners.get(key).forEach((cb) => cb(this.state[key], prevState[key]));
       }
-      if (item.status === 'Out' || item.qty === '0') return 'Out';
-      if (item.status === 'Low') return 'Low';
-      return 'OK';
-    }
-
-    function renderStats() {
-      document.getElementById('needCount').textContent = items.filter(i => computeStatus(i) !== 'OK').length;
-      document.getElementById('cartCount').textContent = items.filter(i => i.inCart).length;
-      document.getElementById('allCount').textContent = items.length;
-    }
-
-    function renderList() {
-      const q = document.getElementById('searchInput').value.trim().toLowerCase();
-      const listEl = document.getElementById('list');
-      const emptyEl = document.getElementById('emptyState');
-
-      const filtered = items.filter(i => {
-        const status = computeStatus(i);
-        const matchSearch = !q || [i.item, i.location, i.category, i.notes].join(' ').toLowerCase().includes(q);
-        if (!matchSearch) return false;
-        if (activeFilter === 'shopping') return status !== 'OK' || i.inCart;
-        if (activeFilter === 'out') return status === 'Out';
-        if (activeFilter === 'low') return status === 'Low';
-        if (activeFilter === 'cart') return i.inCart;
-        return true;
-      });
-
-      document.getElementById('listCount').textContent = `${filtered.length} item${filtered.length === 1 ? '' : 's'}`;
-      listEl.innerHTML = '';
-
-      if (filtered.length === 0) {
-        emptyEl.classList.remove('hidden');
-      } else {
-        emptyEl.classList.add('hidden');
-        filtered.forEach(item => listEl.appendChild(createCard(item)));
-      }
-
-      renderStats();
-    }
-
-    function createCard(item) {
-      const status = computeStatus(item);
-      const card = document.createElement('article');
-      card.className = `card ${item.inCart ? 'in-cart' : ''}`;
-      card.dataset.status = status;
-
-      card.innerHTML = `
-        <div class="row">
-          <div>
-            <h3 class="item-name">
-              <button class="namebtn" type="button" onclick="startEdit('${item.id}')">${escapeHtml(item.item)}</button>
-            </h3>
-            <div class="meta">
-              <span class="pill">${escapeHtml(item.location)}</span>
-              <span class="pill status-pill ${status.toLowerCase()}">${status === 'Out' ? 'Out of stock' : status === 'Low' ? 'Low stock' : 'In stock'}</span>
-              <span class="pill" style="font-weight:700;">Qty: ${escapeHtml(item.qty)}</span>
-              ${item.expiry ? `<span class="pill" style="color:var(--color-out)">Exp: ${item.expiry}</span>` : ''}
-            </div>
-          </div>
-          <button class="btn small ${item.inCart ? '' : 'primary'}" onclick="toggleCart('${item.id}')">
-            ${item.inCart ? '✓ In Cart' : '+ To List'}
-          </button>
-        </div>
-        ${item.inCart ? `
-          <div class="restock-banner">
-            <span>Purchased! Add back to Pantry?</span>
-            <div style="display:flex;gap:var(--space-1);">
-              <button class="btn small primary" onclick="quickRestock('${item.id}', 'Full')">Set Full</button>
-              <button class="btn small" onclick="quickRestock('${item.id}', 'Half')">+1 / Half</button>
-            </div>
-          </div>
-        ` : `
-          <div class="actions">
-            <div class="segmented">
-              <button class="${item.qty === 'Full' ? 'active' : ''}" onclick="quickUpdateQty('${item.id}', 'Full')">Full</button>
-              <button class="${item.qty === 'Half' ? 'active' : ''}" onclick="quickUpdateQty('${item.id}', 'Half')">Half</button>
-              <button class="${item.qty === 'Low' ? 'active' : ''}" onclick="quickUpdateQty('${item.id}', 'Low')">Low</button>
-              <button class="${item.qty === 'Out' ? 'active' : ''}" onclick="quickUpdateQty('${item.id}', 'Out')">Out</button>
-            </div>
-            <button class="btn small" onclick="deleteItem('${item.id}')" style="margin-left:auto;">Delete</button>
-          </div>
-        `}
-      `;
-      return card;
-    }
-
-    // Fast-Entry & Form Controls
-    function toggleQtyMode(mode) {
-      document.getElementById('qtyQualitative').classList.toggle('hidden', mode !== 'qualitative');
-      document.getElementById('qtyExact').classList.toggle('hidden', mode !== 'exact');
-    }
-
-    function setLevel(lvl, btn) {
-      currentLevel = lvl;
-      document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-    }
-
-    function toggleAdvancedFields() {
-      const adv = document.getElementById('advancedFields');
-      const btn = document.getElementById('toggleMoreBtn');
-      const isHidden = adv.classList.toggle('hidden');
-      btn.textContent = isHidden ? '+ More options (Expiry, Category, Notes, Barcode)' : '– Fewer options';
-    }
-
-    function quickUpdateQty(id, level) {
-      const item = items.find(i => i.id === id);
-      if (!item) return;
-      item.qtyMode = 'qualitative';
-      item.qty = level;
-      item.status = computeStatus(item);
-      saveStore();
-      renderList();
-    }
-
-    function toggleCart(id) {
-      const item = items.find(i => i.id === id);
-      if (!item) return;
-      item.inCart = !item.inCart;
-      saveStore();
-      renderList();
-    }
-
-    function quickRestock(id, newLevel) {
-      const item = items.find(i => i.id === id);
-      if (!item) return;
-      item.qtyMode = 'qualitative';
-      item.qty = newLevel;
-      item.status = 'OK';
-      item.inCart = false;
-      saveStore();
-      renderList();
-      showToast(`Restocked ${item.item} as ${newLevel}`);
-    }
-
-    function startAdd() {
-      resetForm();
-      document.getElementById('itemForm').scrollIntoView({ behavior: 'smooth' });
-      document.getElementById('itemName').focus();
-    }
-
-    function startEdit(id) {
-      const item = items.find(i => i.id === id);
-      if (!item) return;
-      editingId = id;
-      document.getElementById('formTitle').textContent = 'Edit Item';
-      document.getElementById('itemName').value = item.item;
-      document.getElementById('itemLocation').value = item.location;
-      document.getElementById('submitBtn').textContent = 'Save Changes';
-      document.getElementById('cancelEditBtn').classList.remove('hidden');
-
-      if (item.qtyMode === 'exact') {
-        document.getElementById('itemQtyMode').value = 'exact';
-        document.getElementById('itemExactQty').value = item.qty;
-        toggleQtyMode('exact');
-      } else {
-        document.getElementById('itemQtyMode').value = 'qualitative';
-        setLevel(item.qty || 'Half');
-        toggleQtyMode('qualitative');
-      }
-
-      document.getElementById('itemForm').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function resetForm() {
-      editingId = null;
-      document.getElementById('itemForm').reset();
-      document.getElementById('formTitle').textContent = 'Fast Entry';
-      document.getElementById('submitBtn').textContent = 'Add Item';
-      document.getElementById('cancelEditBtn').classList.add('hidden');
-      setLevel('Half');
-      toggleQtyMode('qualitative');
-    }
-
-    document.getElementById('itemForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = document.getElementById('itemName').value.trim();
-      if (!name) return;
-
-      const mode = document.getElementById('itemQtyMode').value;
-      const qty = mode === 'exact' ? (document.getElementById('itemExactQty').value.trim() || '1') : currentLevel;
-
-      if (editingId) {
-        const item = items.find(i => i.id === editingId);
-        if (item) {
-          item.item = name;
-          item.location = document.getElementById('itemLocation').value;
-          item.qtyMode = mode;
-          item.qty = qty;
-          item.category = document.getElementById('itemCategory').value;
-          item.expiry = document.getElementById('itemExpiry').value;
-          item.notes = document.getElementById('itemNotes').value;
-          item.status = computeStatus(item);
-        }
-      } else {
-        const newItem = {
-          id: keyOf(name),
-          item: name,
-          location: document.getElementById('itemLocation').value,
-          qtyMode: mode,
-          qty: qty,
-          category: document.getElementById('itemCategory').value,
-          expiry: document.getElementById('itemExpiry').value,
-          notes: document.getElementById('itemNotes').value,
-          inCart: false,
-          status: 'OK'
-        };
-        newItem.status = computeStatus(newItem);
-        items.unshift(newItem);
-      }
-
-      saveStore();
-      resetForm();
-      renderList();
-      showToast(editingId ? 'Item updated' : 'Item added');
     });
 
-    function deleteItem(id) {
-      items = items.filter(i => i.id !== id);
-      saveStore();
-      renderList();
-      showToast('Item deleted');
+    // Notify global listeners
+    if (this.listeners.has('*')) {
+      this.listeners.get('*').forEach((cb) => cb(this.state, prevState));
+    }
+  }
+}
+
+/**
+ * ==========================================
+ * 2. CORE LOOP (Fixed Timestep Execution)
+ * ==========================================
+ */
+class EngineLoop {
+  /**
+   * @param {Function} updateFn - Runs state/physics logic at a fixed rate
+   * @param {Function} renderFn - Handles frame rendering
+   * @param {number} tps - Ticks Per Second for fixed updates (default: 60)
+   */
+  constructor(updateFn, renderFn, tps = 60) {
+    this.updateFn = updateFn;
+    this.renderFn = renderFn;
+    this.step = 1 / tps; // Tick interval in seconds
+
+    this.lastTime = 0;
+    this.accumulator = 0;
+    this.rafId = null;
+    this.isRunning = false;
+  }
+
+  start() {
+    if (this.isRunning) return;
+    this.isRunning = true;
+    this.lastTime = performance.now();
+    this.rafId = requestAnimationFrame(this.loop.bind(this));
+  }
+
+  stop() {
+    if (!this.isRunning) return;
+    this.isRunning = false;
+    cancelAnimationFrame(this.rafId);
+  }
+
+  loop(currentTime) {
+    if (!this.isRunning) return;
+
+    // Convert delta time to seconds
+    let deltaTime = (currentTime - this.lastTime) / 1000;
+    this.lastTime = currentTime;
+
+    // Prevent spiral of death on lag spikes/tab switches
+    if (deltaTime > 0.25) deltaTime = 0.25;
+
+    this.accumulator += deltaTime;
+
+    // Fixed timestep updates
+    while (this.accumulator >= this.step) {
+      this.updateFn(this.step);
+      this.accumulator -= this.step;
     }
 
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      document.getElementById('toastMsg').textContent = msg;
-      document.getElementById('toastAction').textContent = 'OK';
-      document.getElementById('toastAction').onclick = () => toast.classList.add('hidden');
-      toast.classList.remove('hidden');
-      setTimeout(() => toast.classList.add('hidden'), 3000);
-    }
+    // Render step with interpolation factor (alpha) for smooth rendering
+    const alpha = this.accumulator / this.step;
+    this.renderFn(alpha);
 
-    function escapeHtml(str) {
-      return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
+    this.rafId = requestAnimationFrame(this.loop.bind(this));
+  }
+}
 
-    // Filter Chips & Navigation Event Listeners
-    document.querySelectorAll('.chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        activeFilter = chip.dataset.filter;
-        renderList();
-      });
-    });
+/**
+ * ==========================================
+ * 3. INTEGRATION & APPLICATION LOGIC
+ * ==========================================
+ */
 
-    document.querySelectorAll('.navbtn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (!btn.dataset.nav || btn.dataset.nav === 'add') return;
-        document.querySelectorAll('.navbtn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activeFilter = btn.dataset.nav === 'inventory' ? 'all' : btn.dataset.nav;
-        renderList();
-      });
-    });
+// Initial Application State
+const store = new Store({
+  score: 0,
+  position: { x: 0, y: 0 },
+  velocity: { x: 50, y: 0 }, // pixels per second
+  status: 'STOPPED', // 'RUNNING', 'PAUSED', 'STOPPED'
+});
 
-    document.getElementById('searchInput').addEventListener('input', renderList);
+// --- CORE LOOP LOGIC ---
 
-    // Initial load
-    renderList();
+// Fixed update: Core state modifications over time
+function update(dt) {
+  if (store.getState().status !== 'RUNNING') return;
+
+  const state = store.getState();
+  
+  // Calculate new position based on constant delta time
+  const newX = state.position.x + state.velocity.x * dt;
+
+  // Mutate state
+  store.setState({
+    position: { ...state.position, x: newX },
+  });
+}
+
+// Render loop: Visual updates (runs every frame)
+function render(alpha) {
+  // Can be used for canvas rendering or DOM frame interpolations
+  const { position, status } = store.getState();
+  
+  // Example DOM synchronization check
+  const entity = document.getElementById('entity');
+  if (entity && status === 'RUNNING') {
+    entity.style.transform = `translateX(${position.x}px)`;
+  }
+}
+
+// Initialize loop
+const loop = new EngineLoop(update, render, 60);
+
+// --- UI / REACTIVE SUBSCRIBERS ---
+
+// Update score UI on change
+store.subscribe('score', (newScore) => {
+  const scoreElem = document.getElementById('score-display');
+  if (scoreElem) scoreElem.textContent = `Score: ${newScore}`;
+});
+
+// Handle status changes
+store.subscribe('status', (newStatus) => {
+  console.log(`Application Status changed to: ${newStatus}`);
+  if (newStatus === 'RUNNING') {
+    loop.start();
+  } else {
+    loop.stop();
+  }
+});
+
+// --- ACTIONS / USER INTERACTION ---
+
+function handleStart() {
+  store.setState({ status: 'RUNNING' });
+}
+
+function handlePause() {
+  store.setState({ status: 'PAUSED' });
+}
+
+function handleAddScore(amount) {
+  const currentScore = store.getState().score;
+  store.setState({ score: currentScore + amount });
+}
   </script>
 </body>
 </html>
