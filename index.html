@@ -1,1151 +1,407 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#171614" media="(prefers-color-scheme: dark)" />
-  <meta name="description" content="Track pantry stock, surface low items, and check things off as you shop. Works offline." />
-  <title>Larder Flow</title>
-  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />
-  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Larder Flow" />
-  <link rel="preconnect" href="https://api.fontshare.com" />
-  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
-  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=boska@500&display=swap" rel="stylesheet">
-  <link rel="manifest" href="/manifest.webmanifest" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopBVI - Pantry & Shopping</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
   <style>
-    /* Art direction: compact pantry tool → calm, practical, mobile-first.
-       Palette: warm neutral surfaces with restrained teal accent.
-       Typography: Boska display + Satoshi body for a clean-but-human utility feel.
-       Density: balanced, optimized for thumb use. */
-    :root,[data-theme="light"]{
-      --text-xs:clamp(.75rem,.7rem + .25vw,.875rem);
-      --text-sm:clamp(.875rem,.8rem + .35vw,1rem);
-      --text-base:clamp(1rem,.95rem + .25vw,1.125rem);
-      --text-lg:clamp(1.125rem,1rem + .75vw,1.5rem);
-      --text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.1rem);
-      --space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;
-      --color-bg:#f7f6f2;--color-surface:#f9f8f5;--color-surface-2:#fbfbf9;--color-surface-offset:#f0ede7;--color-border:#d4d1ca;
-      --color-text:#28251d;--color-text-muted:#6f6d66;--color-text-faint:#9e9b94;--color-text-inverse:#f9f8f4;
-      --color-primary:#01696f;--color-primary-hover:#0c4e54;--color-primary-soft:#dbe9e7;
-      --color-buy:#d19900;--color-buy-soft:#f2e8bf;--color-out:#a13544;--color-out-soft:#edd8db;--color-ok:#437a22;--color-ok-soft:#dde8d6;
-      --radius-sm:.5rem;--radius-md:.8rem;--radius-lg:1rem;--radius-full:9999px;
-      --shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 8px 20px rgba(0,0,0,.08);
-      --font-body:'Satoshi', system-ui, sans-serif;--font-display:'Boska', Georgia, serif;
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-active: #1d4ed8;
+      --warning-bg: #fffbeb;
+      --warning-text: #b45309;
+      --danger-bg: #fef2f2;
+      --danger-text: #b91c1c;
+      --border: #e2e8f0;
+      --radius: 12px;
     }
-    [data-theme="dark"]{
-      --color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#201f1d;--color-surface-offset:#272522;--color-border:#393836;
-      --color-text:#e3e0d9;--color-text-muted:#a19d96;--color-text-faint:#7d7973;--color-text-inverse:#171614;
-      --color-primary:#4f98a3;--color-primary-hover:#227f8b;--color-primary-soft:#21363a;
-      --color-buy:#edb336;--color-buy-soft:#4e4330;--color-out:#dd6974;--color-out-soft:#4d3438;--color-ok:#6daa45;--color-ok-soft:#32412e;
-      --shadow-sm:0 1px 2px rgba(0,0,0,.2);--shadow-md:0 10px 28px rgba(0,0,0,.28);
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0 0 80px 0; /* Padding for fixed bottom nav */
+      line-height: 1.5;
     }
-    *,*::before,*::after{box-sizing:border-box}
-    html{-webkit-text-size-adjust:none;text-size-adjust:none}
-    body{margin:0;min-height:100dvh;font-family:var(--font-body);font-size:var(--text-base);background:var(--color-bg);color:var(--color-text)}
-    button,input,select{font:inherit}
-    /* The browser default ring disappears against the filled teal controls, so
-       state one that works on every surface. */
-    :where(button,input,select,textarea,a):focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
-    .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
-    .app{max-width:720px;margin:0 auto;padding:env(safe-area-inset-top) var(--space-4) calc(88px + env(safe-area-inset-bottom))}
-    /* Opaque strip over the status-bar inset, so content pinned just below it
-       doesn't scroll through the gap in an installed app. Zero-height on Android. */
-    body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top);background:var(--color-bg);z-index:7}
-    .skip{position:absolute;left:-999px}.skip:focus{left:var(--space-4);top:var(--space-4);z-index:9;background:var(--color-primary);color:var(--color-text-inverse);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm)}
-    /* The header scrolls away: pinning it would cover the list on a phone, where
-       brand + intro + stats are taller than the viewport. Only .filterbar sticks. */
-    .topbar{padding:var(--space-4) 0 0}
-    .brandrow{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
-    .brand{display:flex;align-items:center;gap:var(--space-3)}
-    .logo{width:40px;height:40px;border-radius:12px;background:var(--color-surface);border:1px solid color-mix(in srgb,var(--color-text) 12%, transparent);display:grid;place-items:center;box-shadow:var(--shadow-sm)}
-    .brand svg{width:24px;height:24px;color:var(--color-primary)}
-    .eyebrow{font-size:var(--text-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-muted)}
-    h1{font-family:var(--font-display);font-size:var(--text-xl);line-height:1;margin:.1rem 0 0}
-    .iconbtn{min-width:40px;min-height:40px;border-radius:var(--radius-full);border:1px solid color-mix(in srgb,var(--color-text) 10%, transparent);background:var(--color-surface);display:grid;place-items:center;color:var(--color-text)}
-    .hero{padding:var(--space-3) 0 0}
-    .hero p{color:var(--color-text-muted);max-width:56ch;margin:.45rem 0 0;font-size:var(--text-sm)}
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2);margin-top:var(--space-3)}
-    .stat{padding:var(--space-3);background:var(--color-surface);border-radius:var(--radius-lg);border:1px solid color-mix(in srgb,var(--color-text) 10%, transparent);box-shadow:var(--shadow-sm)}
-    .stat .label{font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-muted)}
-    .stat .value{font-size:1.35rem;font-weight:700;margin-top:var(--space-1);font-variant-numeric:tabular-nums}
-    /* Sticky as a sibling of the header, not a child: a sticky element can only
-       travel inside its parent's box, so nesting it would unpin it too early. */
-    .filterbar{position:sticky;top:env(safe-area-inset-top);z-index:6;margin:var(--space-3) calc(-1 * var(--space-4)) var(--space-3);padding:var(--space-3) var(--space-4) var(--space-2);background:color-mix(in srgb,var(--color-bg) 92%, transparent);backdrop-filter:blur(10px);border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%, transparent)}
-    .toolbar{display:grid;grid-template-columns:1fr auto;gap:var(--space-3)}
-    .search{display:flex;align-items:center;gap:var(--space-3);min-height:48px;padding:0 var(--space-4);border-radius:var(--radius-full);background:var(--color-surface);border:1px solid color-mix(in srgb,var(--color-text) 10%, transparent)}
-    .search input{border:none;outline:none;background:transparent;width:100%;color:var(--color-text)}
-    .chips{display:flex;gap:var(--space-2);overflow:auto;margin-top:var(--space-3);padding-bottom:var(--space-1);scrollbar-width:none}
-    .chips::-webkit-scrollbar{display:none}
-    .chip{white-space:nowrap;min-height:40px;padding:0 var(--space-4);border-radius:var(--radius-full);border:1px solid color-mix(in srgb,var(--color-text) 10%, transparent);background:var(--color-surface-2);color:var(--color-text-muted)}
-    .chip.active{background:var(--color-primary);color:var(--color-text-inverse);border-color:var(--color-primary)}
-    .section-title{display:flex;justify-content:space-between;align-items:end;margin:0 0 var(--space-3)}
-    .section-title h2{font-size:var(--text-lg);margin:0}
-    .section-title p{font-size:var(--text-sm);color:var(--color-text-muted);margin:0}
-    #content{scroll-margin-top:132px}
-    .list{display:grid;gap:var(--space-2)}
-    .card{background:var(--color-surface);border:1px solid color-mix(in srgb,var(--color-text) 10%, transparent);border-radius:var(--radius-md);padding:var(--space-3);box-shadow:var(--shadow-sm)}
-    .card[data-status="Out"]{background:color-mix(in srgb,var(--color-out-soft) 55%, var(--color-surface))}
-    .card[data-status="Buy"]{background:color-mix(in srgb,var(--color-buy-soft) 50%, var(--color-surface))}
-    .card.in-cart{opacity:.58}
-    .row{display:flex;justify-content:space-between;gap:var(--space-3);align-items:flex-start}
-    .item-name{font-weight:700;margin:0 0 .25rem}
-    /* The name doubles as the edit affordance, so it carries no chrome of its
-       own: the card stays exactly as tall as it was. */
-    .namebtn{font:inherit;color:inherit;background:none;border:0;padding:0;text-align:left;cursor:pointer;border-radius:var(--radius-sm)}
-    .namebtn:hover{text-decoration:underline;text-underline-offset:3px}
-    .card.editing{border-color:var(--color-primary);box-shadow:0 0 0 1px var(--color-primary)}
-    .meta{display:flex;flex-wrap:wrap;gap:var(--space-1);margin-top:var(--space-2)}
-    .pill{padding:.22rem .6rem;border-radius:var(--radius-full);font-size:var(--text-xs);background:var(--color-surface-offset);color:var(--color-text-muted);border:1px solid color-mix(in srgb,var(--color-text) 9%, transparent)}
-    .status-pill.out{background:var(--color-out-soft);color:var(--color-out)}
-    .status-pill.buy{background:var(--color-buy-soft);color:#7c5a00}
-    .status-pill.ok{background:var(--color-ok-soft);color:var(--color-ok)}
-    .actions{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-3)}
-    .btn{min-height:44px;padding:0 var(--space-4);border-radius:var(--radius-full);border:1px solid color-mix(in srgb,var(--color-text) 10%, transparent);background:var(--color-surface-2);color:var(--color-text);font-weight:600}
-    .btn.primary{background:var(--color-primary);border-color:var(--color-primary);color:var(--color-text-inverse)}
-    .btn.small{min-height:38px;padding:0 .8rem}
-    .counter{display:flex;align-items:center;gap:var(--space-2)}
-    .counter button{width:40px;height:40px;border-radius:50%;border:1px solid color-mix(in srgb,var(--color-text) 10%, transparent);background:var(--color-surface-2);color:var(--color-text)}
-    .counter output{min-width:2ch;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
-    .panel{margin-top:var(--space-5);background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-4);border:1px solid color-mix(in srgb,var(--color-text) 10%, transparent)}
-    .panel form{display:grid;gap:var(--space-3)}
-    label{font-size:var(--text-sm);font-weight:600}
-    input,select,textarea{width:100%;min-height:48px;border-radius:var(--radius-md);border:1px solid color-mix(in srgb,var(--color-text) 12%, transparent);background:var(--color-surface-2);padding:0 .9rem;color:var(--color-text)}
-    textarea{min-height:90px;padding:.8rem .9rem;resize:vertical}
-    .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
-    .bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:8;padding:var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--color-bg) 92%, transparent);backdrop-filter:blur(10px);border-top:1px solid color-mix(in srgb,var(--color-text) 10%, transparent)}
-    .bottomnav-inner{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-2)}
-    .navbtn{min-height:52px;border-radius:var(--radius-full);font-size:var(--text-xs);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;color:var(--color-text-muted);background:transparent;border:1px solid transparent}
-    .navbtn.active{background:var(--color-surface);color:var(--color-text);border-color:color-mix(in srgb,var(--color-text) 10%, transparent)}
-    .list-summary{font-size:var(--text-sm);color:var(--color-text-muted);margin:0 0 var(--space-2)}
-    .empty{padding:var(--space-8) var(--space-4);text-align:center;color:var(--color-text-muted)}
-    .empty p{margin:0 0 var(--space-3)}
-    .hidden{display:none !important}
-    .badge{font-size:var(--text-xs);font-weight:600;padding:.3rem .7rem;border-radius:var(--radius-full);background:var(--color-buy-soft);color:#7c5a00;border:1px solid color-mix(in srgb,var(--color-text) 9%, transparent)}
-    [data-theme="dark"] .badge{color:var(--color-buy)}
-    button.badge{cursor:pointer;min-height:30px}
-    .badge[data-state="local"]{background:var(--color-surface-offset);color:var(--color-text-muted)}
-    .badge[data-state="ok"]{background:var(--color-ok-soft);color:var(--color-ok)}
-    .badge[data-state="syncing"]{background:var(--color-primary-soft);color:var(--color-primary)}
-    .badge[data-state="error"]{background:var(--color-out-soft);color:var(--color-out)}
-    .linkbtn{background:none;border:none;padding:0;color:var(--color-primary);font-size:var(--text-sm);font-weight:600;text-decoration:underline;cursor:pointer}
-    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));z-index:20;display:flex;align-items:center;gap:var(--space-3);max-width:min(92vw,420px);padding:var(--space-3) var(--space-4);border-radius:var(--radius-full);background:var(--color-surface);border:1px solid color-mix(in srgb,var(--color-text) 12%, transparent);box-shadow:var(--shadow-md);font-size:var(--text-sm)}
-    @media (prefers-reduced-motion:no-preference){.toast{animation:toast-in .25s ease-out}}
-    @keyframes toast-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
-    @media (min-width:760px){
-      .app{padding-bottom:var(--space-8)}
-      .hero p{font-size:var(--text-base)}
-      .bottomnav{position:sticky;top:calc(100dvh - 84px)}
-      .bottomnav-inner{max-width:none}
-      .main-grid{display:grid;grid-template-columns:1.25fr .85fr;gap:var(--space-5);align-items:start}
-      .panel{margin-top:0;position:sticky;top:140px}
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 16px;
     }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .status-badge.online {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: white;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    /* Dashboard Cards & Banners */
+    .dashboard-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .alert-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .alert-banner.low-stock {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+      border: 1px solid #fde68a;
+    }
+
+    /* Filters & Search */
+    .filter-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      scrollbar-width: none;
+    }
+
+    .chip {
+      background: white;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      white-space: nowrap;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .chip.active {
+      background: var(--text);
+      color: white;
+      border-color: var(--text);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 1rem;
+      margin-bottom: 12px;
+      background: white;
+    }
+
+    /* Item List Cards */
+    .item-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .item-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .item-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .item-subtext {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .item-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-stepper {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: white;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      gap: 4px;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      background: var(--card-bg);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      margin-top: 16px;
+    }
+
+    /* Views Controller */
+    .view-content { display: none; }
+    .view-content.active { display: block; }
   </style>
 </head>
 <body>
-  <a class="skip" href="#content">Skip to content</a>
-  <div class="app">
-    <header class="topbar">
-      <div class="brandrow">
-        <div class="brand">
-          <div class="logo" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-label="Larder Flow logo">
-              <path d="M6 4.5h12v15H6z"></path>
-              <path d="M9 4.5v15"></path>
-              <path d="M12 8h3"></path>
-              <path d="M12 12h3"></path>
-              <path d="M12 16h3"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="eyebrow">Pantry PWA</div>
-            <h1>Larder Flow</h1>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:var(--space-3)">
-          <button class="badge" id="syncBadge" type="button" data-state="local">On this device</button>
-          <button class="iconbtn" data-theme-toggle aria-label="Switch color theme">◐</button>
-        </div>
-      </div>
-      <section class="hero">
-        <p>Tap <strong>In Cart</strong> as you shop. Changes save on this device and sync to your Google Sheet, even offline.</p>
-        <div class="stats" aria-label="Summary statistics">
-          <article class="stat"><div class="label">Need now</div><div class="value" id="needCount">0</div></article>
-          <article class="stat"><div class="label">In cart</div><div class="value" id="cartCount">0</div></article>
-          <article class="stat"><div class="label">All items</div><div class="value" id="allCount">0</div></article>
-        </div>
-      </section>
+
+  <div class="container">
+    <header>
+      <h1 class="logo">ShopBVI</h1>
+      <span id="network-status" class="status-badge online">Online</span>
     </header>
 
-    <div class="filterbar">
-      <div class="toolbar">
-        <label class="search" aria-label="Search items">
-          <span aria-hidden="true">⌕</span>
-          <input id="searchInput" type="search" placeholder="Search eggs, tuna, rice…" />
-        </label>
-        <button class="btn small hidden" id="installBtn" type="button">Install</button>
-      </div>
-      <div class="chips" role="group" aria-label="Quick filters">
-        <button class="chip active" data-filter="shopping" type="button" aria-pressed="true">Shopping</button>
-        <button class="chip" data-filter="all" type="button" aria-pressed="false">All</button>
-        <button class="chip" data-filter="out" type="button" aria-pressed="false">Out</button>
-        <button class="chip" data-filter="buy" type="button" aria-pressed="false">Buy</button>
-        <button class="chip" data-filter="cart" type="button" aria-pressed="false">In Cart</button>
-      </div>
-    </div>
+    <!-- 1. TODAY DASHBOARD (DEFAULT) -->
+    <main id="view-today" class="view-content active">
+      <button class="btn-primary" style="margin-bottom: 16px;" onclick="openAddModal()">
+        <span>+ Add Pantry Item</span>
+      </button>
 
-    <!-- Sync trouble is worth hearing about, but the badge itself changes on
-         every tap and every minute. Only real transitions land here. -->
-    <p id="syncAnnounce" class="sr-only" role="status" aria-live="polite"></p>
+      <!-- Restock Alert Banner -->
+      <div id="restock-alert" class="alert-banner low-stock">
+        <span id="restock-alert-text">⚠️ Calculating items...</span>
+        <button class="btn-secondary" onclick="switchTab('shopping')">View List</button>
+      </div>
 
-    <main id="content" class="main-grid">
-      <section>
-        <div class="section-title">
+      <!-- Quick Shopping Launch Card -->
+      <div class="dashboard-card" style="border-left: 4px solid var(--primary);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h2 id="viewTitle">Shopping list</h2>
-            <p id="viewHint">Only items that need buying.</p>
+            <strong style="display: block;">Shopping List</strong>
+            <span id="today-shopping-count" style="font-size: 0.875rem; color: var(--muted);">0 items ready</span>
           </div>
+          <button class="btn-primary" style="width: auto;" onclick="switchTab('shopping')">Start Shopping</button>
         </div>
-        <p id="listSummary" class="list-summary" role="status" aria-live="polite" aria-atomic="true"></p>
-        <div id="list" class="list"></div>
-        <div id="emptyState" class="empty hidden">
-          <p id="emptyText">No items match this view.</p>
-          <button class="linkbtn hidden" id="clearSearchBtn" type="button">Clear search</button>
+      </div>
+
+      <!-- Quick Adjust Row -->
+      <section style="margin-top: 24px;">
+        <h3 style="font-size: 1rem; color: var(--muted); margin-bottom: 8px;">Quick Adjust</h3>
+        <div id="quick-adjust-list">
+          <!-- Dynamically populated with recently adjusted items -->
         </div>
       </section>
+    </main>
 
-      <aside class="panel" aria-labelledby="addItemHeading">
-        <h2 id="addItemHeading">Add or edit an item</h2>
-        <p id="formHint" style="color:var(--color-text-muted);margin:.35rem 0 1rem">Tap any item's name to edit it here. A new name is added as a fresh row in your sheet.</p>
-        <form id="itemForm">
-          <div>
-            <label for="itemName">Item</label>
-            <input id="itemName" name="item" required placeholder="e.g. Eggs" />
-          </div>
-          <div class="field-grid">
-            <div>
-              <label for="itemType">Type</label>
-              <select id="itemType" name="type">
-                <option>Eggs</option><option>Fish & seafood</option><option>Dairy</option><option>Fresh vegetables</option><option>Fresh fruit</option><option>Frozen foods</option><option>Beans & pulses</option><option>Grains, rice & pasta</option><option>Nuts, seeds & baking</option><option>Sauces, pastes & condiments</option>
-              </select>
-            </div>
-            <div>
-              <label for="itemLocation">Location</label>
-              <select id="itemLocation" name="location">
-                <option>Pantry</option><option>Fridge</option><option>Freezer</option><option>Fresh Produce</option><option>Spice Rack</option>
-              </select>
-            </div>
-          </div>
-          <div class="field-grid">
-            <div>
-              <label for="itemStock">Stock</label>
-              <input id="itemStock" name="stock" type="number" min="0" value="0" />
-            </div>
-            <div>
-              <label for="itemMin">Min stock</label>
-              <input id="itemMin" name="minStock" type="number" min="0" value="1" />
-            </div>
-          </div>
-          <div>
-            <label for="itemNotes">Notes</label>
-            <textarea id="itemNotes" name="notes" placeholder="Optional brand or pack-size note"></textarea>
-          </div>
-          <button class="btn primary" type="submit" id="submitBtn">Add item</button>
-          <button class="linkbtn hidden" type="button" id="cancelEditBtn">Cancel edit</button>
-        </form>
-        <p style="margin:var(--space-4) 0 0"><button class="linkbtn" type="button" id="resetBtn">Reset to sample data</button></p>
-      </aside>
+    <!-- 2. INVENTORY VIEW -->
+    <main id="view-inventory" class="view-content">
+      <input type="search" id="inventory-search" class="search-input" placeholder="Search pantry, fridge, produce..." oninput="filterInventory()">
+      
+      <!-- Location Chips -->
+      <div class="filter-scroll" id="location-filters">
+        <button class="chip active" onclick="setFilter('location', 'All', this)">All Locations</button>
+        <button class="chip" onclick="setFilter('location', 'Pantry', this)">Pantry</button>
+        <button class="chip" onclick="setFilter('location', 'Fresh Produce', this)">Fresh Produce</button>
+        <button class="chip" onclick="setFilter('location', 'Fridge', this)">Fridge</button>
+        <button class="chip" onclick="setFilter('location', 'Freezer', this)">Freezer</button>
+        <button class="chip" onclick="setFilter('location', 'Spice Rack', this)">Spice Rack</button>
+      </div>
+
+      <div id="inventory-list">
+        <!-- Rendered inventory cards -->
+      </div>
+
+      <!-- Guided Empty State -->
+      <div id="inventory-empty" class="empty-state" style="display: none;">
+        <h3>No items found</h3>
+        <p style="color: var(--muted); font-size: 0.875rem;">Start adding your items or clear active filters.</p>
+        <button class="btn-primary" onclick="openAddModal()">Add Item</button>
+      </div>
+    </main>
+
+    <!-- 3. SHOPPING VIEW -->
+    <main id="view-shopping" class="view-content">
+      <h2 style="font-size: 1.25rem; margin-top: 0;">Shopping List</h2>
+      <p style="color: var(--muted); font-size: 0.875rem;">Checking off an item updates its stock and returns it to inventory.</p>
+
+      <div id="shopping-list">
+        <!-- Rendered shopping list cards -->
+      </div>
+
+      <div id="shopping-empty" class="empty-state" style="display: none;">
+        <h3>Your shopping list is clear!</h3>
+        <p style="color: var(--muted); font-size: 0.875rem;">All your stock levels are well supplied.</p>
+      </div>
+    </main>
+
+    <!-- 4. MORE / SETTINGS VIEW -->
+    <main id="view-more" class="view-content">
+      <h2 style="font-size: 1.25rem; margin-top: 0;">Settings & Data</h2>
+      <div class="dashboard-card">
+        <strong>Storage Locations</strong>
+        <p style="font-size: 0.875rem; color: var(--muted); margin: 4px 0 0 0;">Pantry, Fresh Produce, Fridge, Freezer, Spice Rack</p>
+      </div>
+      <div class="dashboard-card">
+        <strong>Google Sheets Sync</strong>
+        <p style="font-size: 0.875rem; color: var(--muted); margin: 4px 0 0 0;">Connected via Netlify Functions</p>
+      </div>
     </main>
   </div>
 
-  <nav class="bottomnav" aria-label="Primary navigation">
-    <div class="bottomnav-inner">
-      <button class="navbtn active" data-nav="shopping">Shop<span>Need now</span></button>
-      <button class="navbtn" data-nav="inventory">Inventory<span>All items</span></button>
-      <button class="navbtn" data-nav="cart">Cart<span>Checked off</span></button>
-      <button class="navbtn" data-nav="add">Add<span>New item</span></button>
-    </div>
+  <!-- COMPACT BOTTOM NAVIGATION -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('today', this)">
+      <span style="font-size: 1.2rem;">🏠</span>
+      <span>Today</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('inventory', this)">
+      <span style="font-size: 1.2rem;">📦</span>
+      <span>Inventory</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('shopping', this)">
+      <span style="font-size: 1.2rem;">🛒</span>
+      <span>Shopping</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('more', this)">
+      <span style="font-size: 1.2rem;">⚙️</span>
+      <span>More</span>
+    </button>
   </nav>
 
-  <div class="toast hidden" id="toast" role="status">
-    <span id="toastMsg"></span>
-    <button class="btn small primary" type="button" id="toastAction"></button>
-  </div>
-
   <script>
-    const seedItems = [
-      {id:'eggs',item:'Eggs',type:'Eggs',location:'Fridge',stock:0,minStock:1,inCart:false,notes:''},
-      {id:'albacore-tuna',item:'Albacore tuna',type:'Fish & seafood',location:'Pantry',stock:0,minStock:1,inCart:false,notes:'jar'},
-      {id:'basmati-rice',item:'Basmati rice',type:'Grains, rice & pasta',location:'Pantry',stock:1,minStock:1,inCart:false,notes:''},
-      {id:'cottage-cheese',item:'Cottage cheese',type:'Dairy',location:'Fridge',stock:1,minStock:1,inCart:true,notes:'lactose-free'},
-      {id:'frozen-blueberries',item:'Frozen blueberries',type:'Frozen foods',location:'Freezer',stock:2,minStock:1,inCart:false,notes:''},
-      {id:'bok-choy',item:'Bok choy',type:'Fresh vegetables',location:'Fridge',stock:0,minStock:1,inCart:false,notes:''},
-      {id:'olive-oil',item:'Olive oil extra virgin',type:'Sauces, pastes & condiments',location:'Pantry',stock:1,minStock:1,inCart:false,notes:''},
-      {id:'lemons',item:'Lemons',type:'Fresh fruit',location:'Fresh Produce',stock:3,minStock:2,inCart:false,notes:''}
-    ];
-
-    const STORAGE_KEY = 'larder-flow:items:v1';
-    const THEME_KEY = 'larder-flow:theme';
-    const QUEUE_KEY = 'larder-flow:queue:v1';
-    const SYNC_KEY = 'larder-flow:sync-key';
-    const API = '/api/pantry';
-    /* Must not exceed the function's own MAX_OPS: it rejects an oversized batch
-       outright, which would leave the queue stuck and growing forever. */
-    const MAX_OPS_PER_SYNC = 200;
-    /* How long a delete waits, undoable, before the sheet row is touched. */
-    const UNDO_MS = 7000;
-
-    /* Items are identified by their name, because that is what the Google Sheet
-       row is matched on. Keep this in step with the function's normaliseKey. */
-    function keyOf(name){
-      return String(name ?? '').trim().toLowerCase().replace(/\s+/g,' ');
-    }
-
-    function readStore(key, fallback){
-      try {
-        const saved = JSON.parse(localStorage.getItem(key));
-        return saved === null || saved === undefined ? fallback : saved;
-      } catch { return fallback; }
-    }
-
-    function writeStore(key, value){
-      try { localStorage.setItem(key, JSON.stringify(value)); }
-      catch { /* private mode or quota: the session still works, it just won't persist */ }
-    }
-
-    function normaliseItem(raw){
-      return {
-        id: keyOf(raw.item),
-        item: String(raw.item ?? '').trim(),
-        type: raw.type ?? '',
-        location: raw.location ?? '',
-        stock: Number(raw.stock) || 0,
-        minStock: Number(raw.minStock) || 0,
-        inCart: Boolean(raw.inCart),
-        notes: raw.notes ?? ''
-      };
-    }
-
-    function loadItems(){
-      const saved = readStore(STORAGE_KEY, null);
-      const source = Array.isArray(saved) ? saved : structuredClone(seedItems);
-      const byKey = new Map();
-      source.forEach(raw => {
-        const item = normaliseItem(raw);
-        if (item.item) byKey.set(item.id, item);
-      });
-      return [...byKey.values()];
-    }
-
-    function saveItems(){ writeStore(STORAGE_KEY, items); }
-    function saveQueue(){ writeStore(QUEUE_KEY, queue); }
-
-    function escapeHtml(value){
-      return String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    let items = loadItems();
-    let queue = (() => { const saved = readStore(QUEUE_KEY, []); return Array.isArray(saved) ? saved : []; })();
-    let activeFilter = 'shopping';
-    let deferredPrompt = null;
-    const listEl = document.getElementById('list');
-    const emptyEl = document.getElementById('emptyState');
-    const emptyText = document.getElementById('emptyText');
-    const clearSearchBtn = document.getElementById('clearSearchBtn');
-    const summaryEl = document.getElementById('listSummary');
-    const searchInput = document.getElementById('searchInput');
-    const needCount = document.getElementById('needCount');
-    const cartCount = document.getElementById('cartCount');
-    const allCount = document.getElementById('allCount');
-    const viewTitle = document.getElementById('viewTitle');
-    const viewHint = document.getElementById('viewHint');
-    const installBtn = document.getElementById('installBtn');
-    const itemForm = document.getElementById('itemForm');
-    const itemName = document.getElementById('itemName');
-    const itemType = document.getElementById('itemType');
-    const itemLocation = document.getElementById('itemLocation');
-    const itemStock = document.getElementById('itemStock');
-    const itemMin = document.getElementById('itemMin');
-    const itemNotes = document.getElementById('itemNotes');
-    const submitBtn = document.getElementById('submitBtn');
-    const cancelEditBtn = document.getElementById('cancelEditBtn');
-    const formHint = document.getElementById('formHint');
-    const resetBtn = document.getElementById('resetBtn');
-    const syncBadge = document.getElementById('syncBadge');
-    const syncAnnounce = document.getElementById('syncAnnounce');
-    const toast = document.getElementById('toast');
-    const toastMsg = document.getElementById('toastMsg');
-    const toastAction = document.getElementById('toastAction');
-
-    function getStatus(item){
-      if (item.stock === 0) return 'Out';
-      if (item.stock <= item.minStock) return 'Buy';
-      return 'OK';
-    }
-
-    function filterItems(){
-      const q = searchInput.value.trim().toLowerCase();
-      return items.filter(item => {
-        const status = getStatus(item);
-        const matchesSearch = !q || [item.item,item.type,item.location,item.notes].join(' ').toLowerCase().includes(q);
-        if (!matchesSearch) return false;
-        if (activeFilter === 'shopping') return status !== 'OK';
-        if (activeFilter === 'out') return status === 'Out';
-        if (activeFilter === 'buy') return status === 'Buy';
-        if (activeFilter === 'cart') return item.inCart === true;
-        return true;
-      }).sort((a,b) => a.location.localeCompare(b.location) || a.item.localeCompare(b.item));
-    }
-
-    function renderStats(){
-      needCount.textContent = items.filter(i => getStatus(i) !== 'OK').length;
-      cartCount.textContent = items.filter(i => i.inCart).length;
-      allCount.textContent = items.length;
-    }
-
-    /* What is on screen right now, in render order. Cards are patched in place,
-       so these are the same objects `items` holds and their counts stay live. */
-    let visibleItems = [];
-    let summaryTimer = null;
-
-    /* The only live region over the list. It used to be #list itself, which made
-       a screen reader re-read every card on each keystroke and each stock tap;
-       a one-line count says as much in a second. Debounced so a burst of typing
-       or tapping is announced once, when it settles. */
-    function renderSummary(){
-      const total = visibleItems.length;
-      const out = visibleItems.filter(i => getStatus(i) === 'Out').length;
-      const inCart = visibleItems.filter(i => i.inCart).length;
-      const parts = [`${total} ${total === 1 ? 'item' : 'items'}`];
-      if (out) parts.push(`${out} out of stock`);
-      if (inCart) parts.push(`${inCart} in cart`);
-      const text = total === 0 ? 'No items match this view.' : parts.join(' · ');
-      clearTimeout(summaryTimer);
-      summaryTimer = setTimeout(() => { summaryEl.textContent = text; }, 300);
-    }
-
-    /* Everything about a card that can change without the item leaving the list.
-       Writing these fields rather than re-creating the card keeps the pressed
-       button alive, so focus and the screen reader's place both survive a tap. */
-    function paintCard(card, item){
-      const status = getStatus(item);
-      card.dataset.status = status;
-      card.classList.toggle('in-cart', item.inCart);
-      const statusPill = card.querySelector('.status-pill');
-      statusPill.className = `pill status-pill ${status.toLowerCase()}`;
-      statusPill.textContent = status;
-      const cartBtn = card.querySelector('[data-action="toggle-cart"]');
-      cartBtn.textContent = item.inCart ? 'In Cart' : 'Add to Cart';
-      cartBtn.classList.toggle('primary', !item.inCart);
-      card.querySelector('output').textContent = item.stock;
-    }
-
-    function createCard(item){
-      const name = escapeHtml(item.item);
-      const id = escapeHtml(item.id);
-      const card = document.createElement('article');
-      card.className = 'card';
-      card.dataset.id = item.id;
-      card.innerHTML = `
-        <div class="row">
-          <div>
-            <h3 class="item-name"><button class="namebtn" type="button" data-action="edit" data-id="${id}" aria-label="Edit ${name}">${name}</button></h3>
-            <div class="meta">
-              <span class="pill">${escapeHtml(item.location)}</span>
-              <span class="pill">${escapeHtml(item.type)}</span>
-              <span class="pill status-pill"></span>
-            </div>
-          </div>
-          <button class="btn small" type="button" data-action="toggle-cart" data-id="${id}"></button>
-        </div>
-        <div class="actions">
-          <div class="counter" role="group" aria-label="Stock for ${name}">
-            <button type="button" data-action="decrement" data-id="${id}" aria-label="Decrease stock for ${name}">−</button>
-            <output aria-label="Stock for ${name}"></output>
-            <button type="button" data-action="increment" data-id="${id}" aria-label="Increase stock for ${name}">+</button>
-          </div>
-          <button class="btn small" type="button" data-action="restock" data-id="${id}">Restocked</button>
-          <button class="btn small" type="button" data-action="remove" data-id="${id}">Delete</button>
-        </div>
-      `;
-      paintCard(card, item);
-      return card;
-    }
-
-    /* Chips and the bottom nav are two views of one piece of state, so both are
-       painted from `activeFilter` rather than each toggling its own classes —
-       picking "Out" used to leave the nav highlighting whatever came before. */
-    const NAV_FOR_FILTER = { shopping:'shopping', out:'shopping', buy:'shopping', all:'inventory', cart:'cart' };
-
-    function renderFilterControls(){
-      document.querySelectorAll('.chip').forEach(chip => {
-        const on = chip.dataset.filter === activeFilter;
-        chip.classList.toggle('active', on);
-        chip.setAttribute('aria-pressed', String(on));
-      });
-      document.querySelectorAll('.navbtn').forEach(btn => {
-        const on = btn.dataset.nav === NAV_FOR_FILTER[activeFilter];
-        btn.classList.toggle('active', on);
-        btn.setAttribute('aria-current', on ? 'true' : 'false');
-      });
-    }
-
-    function renderEmptyState(count){
-      const query = searchInput.value.trim();
-      emptyEl.classList.toggle('hidden', count !== 0);
-      clearSearchBtn.classList.toggle('hidden', !query);
-      if (count === 0) {
-        emptyText.textContent = query
-          ? `Nothing matches “${query}” in this view.`
-          : 'No items match this view.';
-      }
-    }
-
-    /* A full rebuild. Only for changes that alter which items belong on screen:
-       filter, search, add, delete, and a sheet sync. Tapping a card patches
-       that card instead — see the list click handler. */
-    function renderList(){
-      const filtered = filterItems();
-      const labels = {
-        shopping:['Shopping list','Only items that need buying.'],
-        all:['Inventory','Everything in your larder.'],
-        out:['Out of stock','These need immediate replacement.'],
-        buy:['Running low','These are at or below minimum stock.'],
-        cart:['In cart','Checked off during shopping.']
-      };
-      [viewTitle.textContent, viewHint.textContent] = labels[activeFilter];
-      visibleItems = filtered;
-      listEl.replaceChildren(...filtered.map(createCard));
-      renderEmptyState(filtered.length);
-      renderFilterControls();
-      markEditingCard();
-      renderStats();
-      renderSummary();
-    }
-
-    document.querySelectorAll('.chip').forEach(btn => btn.addEventListener('click', () => {
-      activeFilter = btn.dataset.filter;
-      renderList();
-    }));
-
-    document.querySelectorAll('.navbtn').forEach(btn => btn.addEventListener('click', () => {
-      const target = btn.dataset.nav;
-      if (target === 'add') {
-        startAdd();
-        return;
-      }
-      activeFilter = target === 'inventory' ? 'all' : target;
-      renderList();
-      // Scroll to the list, not the page top: the intro is not what you want to
-      // see after picking a view. #content's scroll-margin clears the filter bar.
-      document.getElementById('content').scrollIntoView({behavior:'smooth', block:'start'});
-    }));
-
-    searchInput.addEventListener('input', renderList);
-    clearSearchBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      renderList();
-      searchInput.focus();
-    });
-
-    listEl.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      const item = items.find(i => i.id === btn.dataset.id);
-      if (!item) return;
-      const action = btn.dataset.action;
-      if (action === 'edit') { startEdit(item); return; }
-      if (action === 'remove') { deleteItem(item); return; }
-
-      if (action === 'toggle-cart') item.inCart = !item.inCart;
-      if (action === 'increment') item.stock += 1;
-      if (action === 'decrement') item.stock = Math.max(0, item.stock - 1);
-      if (action === 'restock') { item.stock = Math.max(item.minStock + 1, 1); item.inCart = false; }
-      queueOp(upsertOp(item));
-      saveItems();
-
-      // Patch only this card. Re-rendering the list would replace the button
-      // under the user's finger: focus would drop to <body>, a screen reader
-      // would lose its place, and a fast second tap could land on a node that
-      // is already detached. An item that no longer matches the filter stays
-      // put — with its status pill updated — until the next full render.
-      const card = btn.closest('.card');
-      if (card) paintCard(card, item);
-      // Counting stock on a card while its values sit in the edit form would
-      // otherwise leave the form holding a stale number to save back.
-      if (item.id === editingId) itemStock.value = item.stock;
-      renderStats();
-      renderSummary();
-    });
-
-    /* ---------- Delete, with an undo window ----------
-       Deleting takes the item's whole row out of the sheet, extra columns of
-       your own included, so the op is held rather than queued straight away:
-       undo inside the window means the sheet is never touched at all. Leaving
-       the app commits the hold, so a delete is never quietly dropped either. */
-    let pendingDelete = null;
-
-    /** Drops the hold without acting on it, closing the undo toast if it is up. */
-    function discardPendingDelete(){
-      if (!pendingDelete) return null;
-      clearTimeout(pendingDelete.timer);
-      const held = pendingDelete;
-      pendingDelete = null;
-      if (toastHandler === undoDelete) hideToast();
-      return held;
-    }
-
-    function commitPendingDelete(){
-      const held = discardPendingDelete();
-      if (held) queueOp({ type: 'delete', id: held.item.id });
-    }
-
-    function deleteItem(item){
-      commitPendingDelete(); // one held delete at a time
-      const index = items.findIndex(i => i.id === item.id);
-      items = items.filter(i => i.id !== item.id);
-      saveItems();
-      if (editingId === item.id) resetForm(); // don't leave the form aimed at a gone row
-      pendingDelete = { item, index, timer: setTimeout(commitPendingDelete, UNDO_MS) };
-      showToast(`Deleted ${item.item}.`, 'Undo', undoDelete, { autoHide: 0 });
-      renderList(); // the item is gone from the list, so the card has to go too
-    }
-
-    function undoDelete(){
-      const held = discardPendingDelete();
-      if (!held) { hideToast(); return; }
-      items.splice(Math.min(Math.max(held.index, 0), items.length), 0, held.item);
-      saveItems();
-      renderList();
-    }
-
-    /* ---------- Add and edit ----------
-       The sheet keeps one row per item name, so a name that already exists is
-       an edit rather than an addition. The form now says so: a known name
-       loads that item's values, and the submit button changes with it.
-       Submitting used to write the form's own defaults over the matching row,
-       quietly zeroing a stock count and wiping the notes with it. */
-    const BASE_TYPES = ['Eggs','Fish & seafood','Dairy','Fresh vegetables','Fresh fruit','Frozen foods','Beans & pulses','Grains, rice & pasta','Nuts, seeds & baking','Sauces, pastes & condiments'];
-    const BASE_LOCATIONS = ['Pantry','Fridge','Freezer','Fresh Produce','Spice Rack'];
-    let editingId = null;
-
-    /* A sheet can hold any type or location, not just the ten shipped here, so
-       whatever the sheet uses is offered too — otherwise editing an item would
-       silently retag it with one of the built-in values. */
-    function fillOptions(select, base, values){
-      const extra = [...new Set(values.map(v => String(v ?? '').trim()).filter(Boolean))]
-        .filter(v => !base.includes(v)).sort((a, b) => a.localeCompare(b));
-      const wanted = [...base, ...extra];
-      const signature = wanted.join('|');
-      if (select.dataset.options === signature) return;
-      select.dataset.options = signature;
-      const current = select.value;
-      const blank = document.createElement('option');
-      blank.value = '';
-      blank.textContent = 'Not set';
-      select.replaceChildren(blank, ...wanted.map(value => {
-        const option = document.createElement('option');
-        option.value = value;
-        option.textContent = value;
-        return option;
-      }));
-      select.value = current;
-    }
-
-    function refreshFormOptions(){
-      fillOptions(itemType, BASE_TYPES, items.map(i => i.type));
-      fillOptions(itemLocation, BASE_LOCATIONS, items.map(i => i.location));
-    }
-
-    function setFormMode(item){
-      editingId = item ? item.id : null;
-      submitBtn.textContent = item ? 'Save changes' : 'Add item';
-      cancelEditBtn.classList.toggle('hidden', !item);
-      formHint.textContent = item
-        ? `Editing “${item.item}”. Saving overwrites that row in your sheet.`
-        : "Tap any item's name to edit it here. A new name is added as a fresh row in your sheet.";
-    }
-
-    /** Everything but the name, so the field can be filled while it is typed in. */
-    function fillFields(item){
-      refreshFormOptions();
-      itemType.value = item.type;
-      itemLocation.value = item.location;
-      itemStock.value = item.stock;
-      itemMin.value = item.minStock;
-      itemNotes.value = item.notes;
-    }
-
-    function resetForm(){
-      itemForm.reset();
-      refreshFormOptions();
-      itemName.value = '';
-      itemStock.value = 0;
-      itemMin.value = 1;
-      itemType.value = BASE_TYPES[0];
-      itemLocation.value = BASE_LOCATIONS[0];
-      itemNotes.value = '';
-      setFormMode(null);
-      markEditingCard();
-    }
-
-    /** Marks which card the form is currently pointed at. */
-    function markEditingCard(){
-      [...listEl.children].forEach(card => card.classList.toggle('editing', card.dataset.id === editingId));
-    }
-
-    function startEdit(item){
-      itemName.value = item.item;
-      fillFields(item);
-      setFormMode(item);
-      markEditingCard();
-      itemForm.scrollIntoView?.({behavior:'smooth', block:'center'});
-      itemName.focus();
-    }
-
-    function startAdd(){
-      resetForm();
-      itemForm.scrollIntoView?.({behavior:'smooth', block:'center'});
-      itemName.focus();
-    }
-
-    // Typing a name that already exists is the other way into an edit.
-    itemName.addEventListener('input', () => {
-      const match = items.find(i => i.id === keyOf(itemName.value));
-      if (match && match.id !== editingId) {
-        fillFields(match);
-        setFormMode(match);
-        markEditingCard();
-      } else if (!match && editingId) {
-        // The values stay put: they are visible, and saving now writes a new
-        // row rather than touching the item that was being edited.
-        setFormMode(null);
-        markEditingCard();
-      }
-    });
-
-    cancelEditBtn.addEventListener('click', () => { resetForm(); itemName.focus(); });
-
-    itemForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = String(itemName.value || '').trim();
-      if (!name) return;
-
-      const next = normaliseItem({
-        item: name,
-        type: itemType.value,
-        location: itemLocation.value,
-        stock: itemStock.value,
-        minStock: itemMin.value,
-        inCart: false,
-        notes: itemNotes.value
-      });
-
-      const existing = items.find(i => i.id === next.id);
-      if (existing) {
-        // In Cart is set while shopping, not in this form, so it is left alone.
-        Object.assign(existing, next, { inCart: existing.inCart });
-        queueOp(upsertOp(existing));
-        showToast(`Updated ${existing.item}.`, 'Done', hideToast);
+    // Tab switching logic
+    function switchTab(tabName, navElement) {
+      document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(`view-${tabName}`).classList.add('active');
+      
+      if (navElement) {
+        navElement.classList.add('active');
       } else {
-        items.unshift(next);
-        queueOp(upsertOp(next));
-        showToast(`Added ${next.item}.`, 'Done', hideToast);
-        activeFilter = 'all'; // a new item rarely belongs to the view you were in
-      }
-
-      saveItems();
-      resetForm();
-      renderList();
-    });
-
-    resetBtn.addEventListener('click', () => {
-      if (syncState.connected) {
-        // With a sheet attached, the sheet wins — this just discards local drift.
-        if (!confirm('Discard local changes and reload everything from the sheet?')) return;
-        discardPendingDelete(); // the reload brings the row back; don't delete it afterwards
-        queue = [];
-        saveQueue();
-        sync({ force: true });
-        return;
-      }
-      if (!confirm('Replace your larder with the sample data?')) return;
-      items = structuredClone(seedItems).map(normaliseItem);
-      saveItems();
-      resetForm();
-      renderList();
-    });
-
-    /* ---------- Sheet sync ---------- */
-    const syncState = { connected: false, status: 'local', message: '', syncedAt: null, sheet: null };
-    /* A failed attempt backs off rather than giving up, so a flaky connection
-       resolves itself without anyone having to notice the badge. */
-    const RETRY_MIN = 5000;
-    const RETRY_MAX = 120_000;
-    let syncTimer = null;
-    let syncing = false;
-    let lastWarning = '';
-    let retryDelay = 0;
-
-    function upsertOp(item){
-      return {
-        type: 'upsert',
-        id: item.id,
-        item: item.item,
-        itemType: item.type,
-        location: item.location,
-        stock: item.stock,
-        minStock: item.minStock,
-        inCart: item.inCart,
-        notes: item.notes
-      };
-    }
-
-    /* One pending op per item: each upsert carries the item's full state, so the
-       most recent op for an id always supersedes the earlier ones. */
-    function queueOp(op){
-      queue = queue.filter(existing => existing.id !== op.id);
-      queue.push(op);
-      saveQueue();
-      renderSync();
-      scheduleSync();
-    }
-
-    function scheduleSync(delay = 900){
-      clearTimeout(syncTimer);
-      syncTimer = setTimeout(() => sync(), delay);
-    }
-
-    function syncHeaders(){
-      const headers = { 'Content-Type': 'application/json' };
-      const key = readStore(SYNC_KEY, '');
-      if (key) headers['x-pantry-token'] = key;
-      return headers;
-    }
-
-    /* Changes made while a request was in flight are re-applied on top of the
-       sheet's response, so nothing appears to jump back. */
-    function withPendingChanges(serverItems){
-      const byKey = new Map(serverItems.map(item => [item.id, item]));
-      queue.forEach(op => {
-        if (op.type === 'delete') { byKey.delete(op.id); return; }
-        byKey.set(op.id, normaliseItem({
-          item: op.item, type: op.itemType, location: op.location,
-          stock: op.stock, minStock: op.minStock, inCart: op.inCart, notes: op.notes
-        }));
-      });
-      // A delete waiting out its undo window is deliberately not queued yet, so
-      // the row is still in the sheet — keep it hidden rather than let it flash
-      // back into the list mid-undo.
-      if (pendingDelete) byKey.delete(pendingDelete.item.id);
-      return [...byKey.values()];
-    }
-
-    function adoptServerItems(data){
-      syncState.connected = true;
-      syncState.sheet = data.spreadsheet || null;
-      syncState.syncedAt = Date.now();
-      syncState.status = 'ok';
-      // A warning means the sheet is bigger than the sync can see, so some rows
-      // are invisible here — worth saying once, and worth keeping on the pill.
-      const warning = (data.warnings || []).join(' ');
-      syncState.message = warning;
-      if (!warning) {
-        lastWarning = '';
-      } else if (warning !== lastWarning && !pendingDelete) {
-        lastWarning = warning;
-        showToast(warning, 'OK', hideToast);
-      }
-      items = withPendingChanges((data.items || []).map(normaliseItem));
-      saveItems();
-      refreshFormOptions();
-      renderList();
-    }
-
-    function askForSyncKey(){
-      syncState.status = 'error';
-      syncState.message = 'A sync key is required.';
-      renderSync();
-      showToast('This larder needs a sync key.', 'Enter key', () => {
-        hideToast();
-        const key = prompt('Sync key');
-        if (!key) return;
-        writeStore(SYNC_KEY, key.trim());
-        sync({ force: true });
-      }, { autoHide: 0 });
-    }
-
-    async function sync({ force = false } = {}){
-      if (syncing) return;
-      if (!navigator.onLine) { renderSync(); return; }
-      if (!force && !queue.length && syncState.syncedAt) return;
-
-      syncing = true;
-      syncState.status = 'syncing';
-      renderSync();
-
-      // Send at most one batch's worth. The function rejects an oversized POST
-      // outright, so a big offline session must go up in chunks — whatever is
-      // left over is picked up by the reschedule in `finally`.
-      const sending = queue.slice(0, MAX_OPS_PER_SYNC);
-      let failed = false;
-      try {
-        const response = await fetch(API, sending.length
-          ? { method: 'POST', headers: syncHeaders(), body: JSON.stringify({ ops: sending }) }
-          : { method: 'GET', headers: syncHeaders() });
-
-        if (response.status === 401) { askForSyncKey(); return; }
-
-        const data = await response.json().catch(() => null);
-
-        if (!data || !data.connected) {
-          syncState.connected = false;
-          syncState.status = data?.reason === 'not_configured' ? 'local' : 'error';
-          syncState.message = data?.hint ? `${data.message} ${data.hint}` : (data?.message || 'Sync failed.');
-          // A site with no sheet behind it is not a failure to retry; a sheet
-          // that answered with an error might come good on its own.
-          failed = syncState.status === 'error';
-          return;
-        }
-
-        // Clear exactly the ops that were sent. Anything queued while the request
-        // was in flight is a newer object and stays for the next round.
-        const sent = new Set(sending);
-        queue = queue.filter(op => !sent.has(op));
-        saveQueue();
-
-        retryDelay = 0;
-        adoptServerItems(data);
-      } catch {
-        syncState.status = navigator.onLine ? 'error' : 'offline';
-        syncState.message = 'Could not reach the sheet.';
-        failed = true;
-      } finally {
-        syncing = false;
-        renderSync();
-        if (!navigator.onLine) {
-          // The `online` listener takes it from here.
-        } else if (failed && (queue.length || !syncState.syncedAt)) {
-          // Without this, a single failed attempt left queued changes sitting
-          // there until the app was reopened or the badge was tapped by hand.
-          retryDelay = Math.min(retryDelay ? retryDelay * 2 : RETRY_MIN, RETRY_MAX);
-          scheduleSync(retryDelay);
-        } else if (queue.length && syncState.status === 'ok') {
-          scheduleSync();
+        // Find matching nav element if switchTab was called programmatically
+        const navIndex = ['today', 'inventory', 'shopping', 'more'].indexOf(tabName);
+        if (navIndex !== -1) {
+          document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
         }
       }
     }
 
-    function relativeTime(timestamp){
-      const seconds = Math.round((Date.now() - timestamp) / 1000);
-      if (seconds < 45) return 'just now';
-      if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
-      if (seconds < 86400) return `${Math.round(seconds / 3600)}h ago`;
-      return `${Math.round(seconds / 86400)}d ago`;
+    function setFilter(type, value, element) {
+      if (element) {
+        element.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        element.classList.add('active');
+      }
+      filterInventory();
     }
 
-    function renderSync(){
-      const pending = queue.length;
-      let state = 'local';
-      let label = 'On this device';
-
-      if (!navigator.onLine) {
-        state = 'offline';
-        label = pending ? `Offline · ${pending} queued` : 'Offline';
-      } else if (syncState.status === 'syncing') {
-        state = 'syncing';
-        label = 'Syncing…';
-      } else if (syncState.status === 'error') {
-        state = 'error';
-        label = pending ? `Sync failed · ${pending} queued` : 'Sync failed';
-      } else if (syncState.connected) {
-        state = pending ? 'syncing' : 'ok';
-        label = pending ? `${pending} to sync` : `Synced ${relativeTime(syncState.syncedAt)}`;
-      }
-
-      syncBadge.dataset.state = state;
-      syncBadge.textContent = label;
-      announceSync(state, label);
-      resetBtn.textContent = syncState.connected ? 'Reload from sheet' : 'Reset to sample data';
+    function filterInventory() {
+      // Inventory filtering handler placeholder
     }
 
-    /* The badge used to be the live region itself, so a screen reader heard
-       "1 to sync", "2 to sync"… on every tap, and the whole label again each
-       minute as the relative time ticked over. Only trouble and the recovery
-       from it are worth interrupting for. */
-    let announcedTrouble = false;
-    function announceSync(state, label){
-      if (state === 'error' || state === 'offline') {
-        if (announcedTrouble) return;
-        announcedTrouble = true;
-        syncAnnounce.textContent = label;
-      } else if (state === 'ok' && announcedTrouble) {
-        announcedTrouble = false;
-        syncAnnounce.textContent = 'Back in sync with your sheet.';
-      }
+    function openAddModal() {
+      alert("Add item modal trigger");
     }
 
-    syncBadge.addEventListener('click', () => {
-      retryDelay = 0; // asking by hand restarts the backoff from the bottom
-      if (syncState.message) {
-        showToast(syncState.message, syncState.connected ? 'Sync now' : 'Retry', () => { hideToast(); sync({ force: true }); });
-        return;
-      }
-      if (!syncState.connected) {
-        showToast('Google Sheets sync is not set up for this site yet. See SETUP.md.', 'OK', hideToast);
-        return;
-      }
-      sync({ force: true });
-    });
-
-    window.addEventListener('online', () => {
-      retryDelay = 0; // a fresh connection deserves an immediate attempt
-      renderSync();
-      sync({ force: !syncState.syncedAt });
-    });
-    window.addEventListener('offline', renderSync);
-    document.addEventListener('visibilitychange', () => {
-      // Coming back to the app is the moment stale data is most obvious.
-      if (document.visibilityState === 'visible' && syncState.connected) sync({ force: true });
-      // Leaving it closes any open undo window: the queue survives in storage,
-      // an in-memory hold would not.
-      if (document.visibilityState === 'hidden') commitPendingDelete();
-    });
-    window.addEventListener('pagehide', commitPendingDelete);
-    setInterval(renderSync, 60_000);
-
-    /* ---------- Toast ----------
-       Informational toasts clear themselves: they sit above the bottom nav, and
-       one left over from earlier is in the way of the app. Toasts tied to a
-       decision (undo, a waiting update, a missing sync key) pass autoHide: 0
-       and stay until they are answered or their own window closes. */
-    let toastHandler = null;
-    let toastTimer = null;
-    function showToast(message, actionLabel, onAction, { autoHide = 6000 } = {}){
-      toastMsg.textContent = message;
-      toastAction.textContent = actionLabel;
-      if (toastHandler) toastAction.removeEventListener('click', toastHandler);
-      toastHandler = onAction;
-      toastAction.addEventListener('click', toastHandler);
-      toast.classList.remove('hidden');
-      clearTimeout(toastTimer);
-      toastTimer = autoHide ? setTimeout(hideToast, autoHide) : null;
-    }
-    function hideToast(){
-      clearTimeout(toastTimer);
-      toast.classList.add('hidden');
-    }
-
-    /* ---------- Theme ---------- */
-    (function(){
-      const toggle = document.querySelector('[data-theme-toggle]');
-      const root = document.documentElement;
-      const themeMetas = document.querySelectorAll('meta[name="theme-color"]');
-      const stored = (() => { try { return localStorage.getItem(THEME_KEY); } catch { return null; } })();
-      let theme = stored || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
-
-      function apply(){
-        root.setAttribute('data-theme', theme);
-        // Both metas get the active colour so the installed app's title bar
-        // follows the in-app choice rather than the OS setting.
-        themeMetas.forEach(m => { m.content = theme === 'dark' ? '#171614' : '#f7f6f2'; });
-      }
-      apply();
-      toggle.addEventListener('click', () => {
-        theme = theme === 'dark' ? 'light' : 'dark';
-        try { localStorage.setItem(THEME_KEY, theme); } catch { /* storage unavailable */ }
-        apply();
-      });
-    })();
-
-    /* ---------- Install ---------- */
-    const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.classList.remove('hidden');
-    });
-
-    installBtn.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        installBtn.classList.add('hidden');
-        return;
-      }
-      // iOS has no install prompt API — point at the Share sheet instead.
-      showToast('Tap the Share button, then “Add to Home Screen”.', 'Got it', hideToast);
-    });
-
-    window.addEventListener('appinstalled', () => {
-      deferredPrompt = null;
-      installBtn.classList.add('hidden');
-    });
-
-    if (isIos && !isStandalone) installBtn.classList.remove('hidden');
-
-    /* ---------- Service worker ---------- */
+    // Register Service Worker for PWA / offline support
     if ('serviceWorker' in navigator) {
-      const hadController = Boolean(navigator.serviceWorker.controller);
-      let reloading = false;
-
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        // Only reload for an update, not for the first worker taking control.
-        if (!hadController || reloading) return;
-        reloading = true;
-        location.reload();
-      });
-
-      window.addEventListener('load', async () => {
-        try {
-          const registration = await navigator.serviceWorker.register('/service-worker.js');
-
-          const promptUpdate = (worker) => showToast('A new version is ready.', 'Refresh', () => {
-            hideToast();
-            worker.postMessage('SKIP_WAITING');
-          }, { autoHide: 0 });
-
-          if (registration.waiting && hadController) promptUpdate(registration.waiting);
-
-          registration.addEventListener('updatefound', () => {
-            const installingWorker = registration.installing;
-            if (!installingWorker) return;
-            installingWorker.addEventListener('statechange', () => {
-              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                promptUpdate(installingWorker);
-              }
-            });
-          });
-        } catch {
-          // An unavailable service worker only costs offline support.
-        }
-      });
+      navigator.serviceWorker.register('/service-worker.js');
     }
-
-    /* ---------- Manifest shortcuts (?view=…) ---------- */
-    (function(){
-      const view = new URLSearchParams(location.search).get('view');
-      if (!view) return;
-      if (view === 'add') {
-        document.querySelector('.navbtn[data-nav="add"]')?.click();
-      } else if (document.querySelector(`.chip[data-filter="${view}"]`)) {
-        document.querySelector(`.chip[data-filter="${view}"]`).click();
-      }
-    })();
-
-    resetForm();
-    renderList();
-    renderSync();
-    sync();
   </script>
 </body>
 </html>
