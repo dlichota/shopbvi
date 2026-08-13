@@ -1,407 +1,573 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ShopBVI - Pantry & Shopping</title>
-  <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#171614" media="(prefers-color-scheme: dark)" />
+  <meta name="description" content="Fast pantry inventory and shopping list loop." />
+  <title>Larder Flow - Pantry & Shopping</title>
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=boska@500&display=swap" rel="stylesheet">
+
   <style>
-    :root {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --primary: #2563eb;
-      --primary-active: #1d4ed8;
-      --warning-bg: #fffbeb;
-      --warning-text: #b45309;
-      --danger-bg: #fef2f2;
-      --danger-text: #b91c1c;
-      --border: #e2e8f0;
-      --radius: 12px;
+    :root, [data-theme="light"] {
+      --text-xs: clamp(.75rem, .7rem + .25vw, .875rem);
+      --text-sm: clamp(.875rem, .8rem + .35vw, 1rem);
+      --text-base: clamp(1rem, .95rem + .25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + .75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.1rem);
+      --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
+      --color-bg: #f7f6f2; --color-surface: #ffffff; --color-surface-offset: #f0ede7; --color-border: #d4d1ca;
+      --color-text: #28251d; --color-text-muted: #6f6d66; --color-text-inverse: #ffffff;
+      --color-primary: #01696f; --color-primary-hover: #0c4e54; --color-primary-soft: #dbe9e7;
+      --color-buy: #8a5700; --color-buy-soft: #fef3c7; --color-out: #991b1b; --color-out-soft: #fee2e2; --color-ok: #166534; --color-ok-soft: #dcfce7;
+      --radius-sm: .5rem; --radius-md: .8rem; --radius-lg: 1rem; --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.05); --shadow-md: 0 8px 20px rgba(0,0,0,.08);
+      --font-body: 'Satoshi', system-ui, sans-serif; --font-display: 'Boska', Georgia, serif;
     }
-
-    * { box-sizing: border-box; }
-
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 0 0 80px 0; /* Padding for fixed bottom nav */
-      line-height: 1.5;
+    [data-theme="dark"] {
+      --color-bg: #171614; --color-surface: #1c1b19; --color-surface-offset: #272522; --color-border: #393836;
+      --color-text: #e3e0d9; --color-text-muted: #a19d96; --color-text-inverse: #171614;
+      --color-primary: #4f98a3; --color-primary-hover: #227f8b; --color-primary-soft: #21363a;
+      --color-buy: #f59e0b; --color-buy-soft: #452c03; --color-out: #f87171; --color-out-soft: #450a0a; --color-ok: #4ade80; --color-ok-soft: #052e16;
     }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; min-height: 100dvh; font-family: var(--font-body); font-size: var(--text-base); background: var(--color-bg); color: var(--color-text); }
+    button, input, select, textarea { font: inherit; }
+    :where(button, input, select, textarea, a):focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    .app { max-width: 720px; margin: 0 auto; padding: env(safe-area-inset-top) var(--space-4) calc(88px + env(safe-area-inset-bottom)); }
+    
+    .topbar { padding: var(--space-4) 0 0; }
+    .brandrow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+    .brand { display: flex; align-items: center; gap: var(--space-3); }
+    .logo { width: 40px; height: 40px; border-radius: 12px; background: var(--color-surface); border: 1px solid var(--color-border); display: grid; place-items: center; box-shadow: var(--shadow-sm); }
+    .brand svg { width: 24px; height: 24px; color: var(--color-primary); }
+    .eyebrow { font-size: var(--text-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--color-text-muted); }
+    h1 { font-family: var(--font-display); font-size: var(--text-xl); line-height: 1; margin: .1rem 0 0; }
+    .iconbtn { min-width: 40px; min-height: 40px; border-radius: var(--radius-full); border: 1px solid var(--color-border); background: var(--color-surface); display: grid; place-items: center; color: var(--color-text); cursor: pointer; }
 
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 16px;
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-top: var(--space-3); }
+    .stat { padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm); }
+    .stat .label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted); }
+    .stat .value { font-size: 1.35rem; font-weight: 700; margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
+
+    .filterbar { position: sticky; top: env(safe-area-inset-top); z-index: 6; margin: var(--space-3) calc(-1 * var(--space-4)) var(--space-3); padding: var(--space-3) var(--space-4) var(--space-2); background: color-mix(in srgb, var(--color-bg) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--color-border); }
+    .toolbar { display: grid; grid-template-columns: 1fr auto; gap: var(--space-3); }
+    .search { display: flex; align-items: center; gap: var(--space-3); min-height: 48px; padding: 0 var(--space-4); border-radius: var(--radius-full); background: var(--color-surface); border: 1px solid var(--color-border); }
+    .search input { border: none; outline: none; background: transparent; width: 100%; color: var(--color-text); }
+    .chips { display: flex; gap: var(--space-2); overflow: auto; margin-top: var(--space-3); padding-bottom: var(--space-1); scrollbar-width: none; }
+    .chip { white-space: nowrap; min-height: 40px; padding: 0 var(--space-4); border-radius: var(--radius-full); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); cursor: pointer; }
+    .chip.active { background: var(--color-primary); color: var(--color-text-inverse); border-color: var(--color-primary); }
+
+    .list { display: grid; gap: var(--space-2); }
+    .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); box-shadow: var(--shadow-sm); transition: border-color .15s; }
+    .card[data-status="Out"] { background: color-mix(in srgb, var(--color-out-soft) 40%, var(--color-surface)); border-color: color-mix(in srgb, var(--color-out) 30%, transparent); }
+    .card[data-status="Low"] { background: color-mix(in srgb, var(--color-buy-soft) 40%, var(--color-surface)); border-color: color-mix(in srgb, var(--color-buy) 30%, transparent); }
+    .card.in-cart { opacity: .65; }
+    .row { display: flex; justify-content: space-between; gap: var(--space-3); align-items: flex-start; }
+    .item-name { font-weight: 700; margin: 0 0 .25rem; font-size: 1.05rem; }
+    .namebtn { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+    .namebtn:hover { text-decoration: underline; }
+
+    .meta { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-2); align-items: center; }
+    .pill { padding: .2rem .6rem; border-radius: var(--radius-full); font-size: var(--text-xs); background: var(--color-surface-offset); color: var(--color-text-muted); border: 1px solid var(--color-border); font-weight: 500; }
+    .status-pill { font-weight: 700; letter-spacing: .02em; }
+    .status-pill.out { background: var(--color-out-soft); color: var(--color-out); border-color: var(--color-out); }
+    .status-pill.low { background: var(--color-buy-soft); color: var(--color-buy); border-color: var(--color-buy); }
+    .status-pill.ok { background: var(--color-ok-soft); color: var(--color-ok); border-color: var(--color-ok); }
+
+    .actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); align-items: center; }
+    .btn { min-height: 42px; padding: 0 var(--space-4); border-radius: var(--radius-full); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }
+    .btn.primary { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-text-inverse); }
+    .btn.small { min-height: 36px; padding: 0 .75rem; font-size: var(--text-xs); }
+    
+    .segmented { display: inline-flex; background: var(--color-surface-offset); border-radius: var(--radius-full); padding: 2px; border: 1px solid var(--color-border); }
+    .segmented button { border: none; background: transparent; padding: .3rem .75rem; font-size: var(--text-xs); font-weight: 600; border-radius: var(--radius-full); cursor: pointer; color: var(--color-text-muted); }
+    .segmented button.active { background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-sm); }
+
+    .panel { margin-top: var(--space-5); background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-4); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm); }
+    .panel form { display: grid; gap: var(--space-3); }
+    label { font-size: var(--text-sm); font-weight: 600; display: block; margin-bottom: .25rem; }
+    input, select, textarea { width: 100%; min-height: 48px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-bg); padding: 0 .9rem; color: var(--color-text); }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    
+    .bottomnav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; padding: var(--space-2) var(--space-4) calc(var(--space-2) + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--color-bg) 95%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--color-border); }
+    .bottomnav-inner { max-width: 720px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+    .navbtn { min-height: 52px; border-radius: var(--radius-md); font-size: var(--text-xs); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; color: var(--color-text-muted); background: transparent; border: 1px solid transparent; cursor: pointer; }
+    .navbtn.active { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border); font-weight: 700; }
+
+    .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(88px + env(safe-area-inset-bottom)); z-index: 20; display: flex; align-items: center; gap: var(--space-3); max-width: min(92vw, 440px); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--color-surface); border: 1px solid var(--color-border); box-shadow: var(--shadow-md); font-size: var(--text-sm); }
+    .hidden { display: none !important; }
+    .linkbtn { background: none; border: none; padding: 0; color: var(--color-primary); font-size: var(--text-sm); font-weight: 600; text-decoration: underline; cursor: pointer; }
+    .badge { font-size: var(--text-xs); font-weight: 600; padding: .3rem .7rem; border-radius: var(--radius-full); background: var(--color-surface-offset); color: var(--color-text-muted); border: 1px solid var(--color-border); cursor: pointer; }
+
+    /* Restock Banner overlay when checking off items in shopping view */
+    .restock-banner { background: var(--color-ok-soft); border: 1px solid var(--color-ok); color: var(--color-ok); border-radius: var(--radius-md); padding: var(--space-3); margin-top: var(--space-2); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); }
+
+    @media (min-width: 760px) {
+      .app { padding-bottom: var(--space-8); }
+      .main-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: var(--space-5); align-items: start; }
+      .panel { margin-top: 0; position: sticky; top: 100px; }
     }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .logo {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin: 0;
-    }
-
-    .status-badge {
-      font-size: 0.75rem;
-      padding: 4px 8px;
-      border-radius: 9999px;
-      background: #e2e8f0;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .status-badge.online {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    /* Buttons */
-    .btn-primary {
-      width: 100%;
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: var(--radius);
-      font-weight: 600;
-      font-size: 1rem;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-secondary {
-      background: white;
-      border: 1px solid var(--border);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-weight: 500;
-      font-size: 0.875rem;
-      cursor: pointer;
-    }
-
-    /* Dashboard Cards & Banners */
-    .dashboard-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 12px;
-    }
-
-    .alert-banner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      border-radius: var(--radius);
-      margin-bottom: 12px;
-      font-weight: 500;
-    }
-
-    .alert-banner.low-stock {
-      background: var(--warning-bg);
-      color: var(--warning-text);
-      border: 1px solid #fde68a;
-    }
-
-    /* Filters & Search */
-    .filter-scroll {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      margin-bottom: 12px;
-      scrollbar-width: none;
-    }
-
-    .chip {
-      background: white;
-      border: 1px solid var(--border);
-      padding: 6px 12px;
-      border-radius: 9999px;
-      font-size: 0.875rem;
-      white-space: nowrap;
-      cursor: pointer;
-      color: var(--muted);
-    }
-
-    .chip.active {
-      background: var(--text);
-      color: white;
-      border-color: var(--text);
-    }
-
-    .search-input {
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      font-size: 1rem;
-      margin-bottom: 12px;
-      background: white;
-    }
-
-    /* Item List Cards */
-    .item-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .item-info {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .item-title {
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-
-    .item-subtext {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    .item-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-stepper {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: white;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Bottom Navigation */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--card-bg);
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      z-index: 100;
-    }
-
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      font-size: 0.75rem;
-      color: var(--muted);
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      gap: 4px;
-    }
-
-    .nav-item.active {
-      color: var(--primary);
-      font-weight: 600;
-    }
-
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 32px 16px;
-      background: var(--card-bg);
-      border: 1px dashed var(--border);
-      border-radius: var(--radius);
-      margin-top: 16px;
-    }
-
-    /* Views Controller */
-    .view-content { display: none; }
-    .view-content.active { display: block; }
   </style>
 </head>
 <body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brandrow">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 4.5h12v15H6z"></path><path d="M9 4.5v15"></path><path d="M12 8h3"></path><path d="M12 12h3"></path><path d="M12 16h3"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="eyebrow">Pantry & Shopping</div>
+            <h1>Larder Flow</h1>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-2)">
+          <button class="badge" id="syncBadge" type="button">On this device</button>
+          <button class="iconbtn" id="themeToggle" aria-label="Toggle theme">◐</button>
+        </div>
+      </div>
 
-  <div class="container">
-    <header>
-      <h1 class="logo">ShopBVI</h1>
-      <span id="network-status" class="status-badge online">Online</span>
+      <div class="stats">
+        <article class="stat"><div class="label">To Buy</div><div class="value" id="needCount">0</div></article>
+        <article class="stat"><div class="label">In Cart</div><div class="value" id="cartCount">0</div></article>
+        <article class="stat"><div class="label">Total Pantry</div><div class="value" id="allCount">0</div></article>
+      </div>
     </header>
 
-    <!-- 1. TODAY DASHBOARD (DEFAULT) -->
-    <main id="view-today" class="view-content active">
-      <button class="btn-primary" style="margin-bottom: 16px;" onclick="openAddModal()">
-        <span>+ Add Pantry Item</span>
-      </button>
-
-      <!-- Restock Alert Banner -->
-      <div id="restock-alert" class="alert-banner low-stock">
-        <span id="restock-alert-text">⚠️ Calculating items...</span>
-        <button class="btn-secondary" onclick="switchTab('shopping')">View List</button>
+    <div class="filterbar">
+      <div class="toolbar">
+        <label class="search">
+          <span>⌕</span>
+          <input id="searchInput" type="search" placeholder="Search pantry, produce, fridge..." />
+        </label>
       </div>
+      <div class="chips" role="group" aria-label="Filters">
+        <button class="chip active" data-filter="shopping" type="button">Shopping List</button>
+        <button class="chip" data-filter="all" type="button">All Items</button>
+        <button class="chip" data-filter="out" type="button">Out</button>
+        <button class="chip" data-filter="low" type="button">Low</button>
+        <button class="chip" data-filter="cart" type="button">In Cart</button>
+      </div>
+    </div>
 
-      <!-- Quick Shopping Launch Card -->
-      <div class="dashboard-card" style="border-left: 4px solid var(--primary);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <strong style="display: block;">Shopping List</strong>
-            <span id="today-shopping-count" style="font-size: 0.875rem; color: var(--muted);">0 items ready</span>
-          </div>
-          <button class="btn-primary" style="width: auto;" onclick="switchTab('shopping')">Start Shopping</button>
+    <main id="content" class="main-grid">
+      <section>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--space-2);">
+          <h2 id="viewTitle" style="font-size:var(--text-lg);margin:0;">Shopping List</h2>
+          <span id="listCount" style="font-size:var(--text-xs);color:var(--color-text-muted);">0 items</span>
         </div>
-      </div>
-
-      <!-- Quick Adjust Row -->
-      <section style="margin-top: 24px;">
-        <h3 style="font-size: 1rem; color: var(--muted); margin-bottom: 8px;">Quick Adjust</h3>
-        <div id="quick-adjust-list">
-          <!-- Dynamically populated with recently adjusted items -->
+        
+        <div id="list" class="list"></div>
+        <div id="emptyState" class="panel hidden" style="text-align:center;padding:var(--space-6);">
+          <p id="emptyText" style="margin:0 0 var(--space-3);color:var(--color-text-muted);">Your shopping list is clear!</p>
+          <button class="btn primary small" onclick="startAdd()">+ Add Item</button>
         </div>
       </section>
+
+      <!-- Minimal Default Fast-Entry Form -->
+      <aside class="panel">
+        <h2 id="formTitle" style="font-size:var(--text-lg);margin:0 0 var(--space-1);">Fast Entry</h2>
+        <p id="formHint" style="font-size:var(--text-xs);color:var(--color-text-muted);margin:0 0 var(--space-3);">Minimal default entry. Additional fields hidden until needed.</p>
+
+        <form id="itemForm">
+          <div>
+            <label for="itemName">Item Name *</label>
+            <input id="itemName" name="item" required placeholder="e.g. Eggs, Milk, Bananas..." autocomplete="off" />
+          </div>
+
+          <div class="field-grid">
+            <div>
+              <label for="itemLocation">Location</label>
+              <select id="itemLocation" name="location">
+                <option>Pantry</option><option>Fridge</option><option>Freezer</option><option>Fresh Produce</option><option>Spice Rack</option>
+              </select>
+            </div>
+            <div>
+              <label for="itemQtyMode">Quantity Mode</label>
+              <select id="itemQtyMode" onchange="toggleQtyMode(this.value)">
+                <option value="qualitative">Level (Full/Low/Out)</option>
+                <option value="exact">Exact (e.g. 3 cans, 12 eggs)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Quantity Selector Controls -->
+          <div id="qtyQualitative">
+            <label>Current Quantity Level</label>
+            <div class="segmented" style="width:100%;display:flex;justify-content:space-between;">
+              <button type="button" class="level-btn" onclick="setLevel('Full', this)">Full</button>
+              <button type="button" class="level-btn active" onclick="setLevel('Half', this)">Half</button>
+              <button type="button" class="level-btn" onclick="setLevel('Low', this)">Low</button>
+              <button type="button" class="level-btn" onclick="setLevel('Out', this)">Out</button>
+            </div>
+          </div>
+
+          <div id="qtyExact" class="hidden">
+            <label for="itemExactQty">Exact Quantity</label>
+            <input id="itemExactQty" placeholder="e.g. 3 cans, 2 packs, 500g" />
+          </div>
+
+          <!-- Progressive Disclosure for Advanced Fields -->
+          <div style="margin-top:var(--space-1);">
+            <button type="button" class="linkbtn" id="toggleMoreBtn" onclick="toggleAdvancedFields()">+ More options (Expiry, Category, Notes, Barcode)</button>
+          </div>
+
+          <div id="advancedFields" class="hidden" style="display:grid;gap:var(--space-3);padding-top:var(--space-2);border-top:1px dashed var(--color-border);">
+            <div class="field-grid">
+              <div>
+                <label for="itemCategory">Category</label>
+
+                <select id="itemCategory">
+                  <option>Produce</option><option>Dairy</option><option>Grains & Bakery</option><option>Canned & Jarred</option><option>Beverages</option><option>Frozen</option><option>Spices & Condiments</option>
+                </select>
+              </div>
+              <div>
+                <label for="itemExpiry">Expiry Date</label>
+                <input id="itemExpiry" type="date" />
+              </div>
+            </div>
+            <div>
+              <label for="itemBarcode">Barcode / SKU (Optional)</label>
+              <input id="itemBarcode" placeholder="Scan or type barcode" />
+            </div>
+            <div>
+              <label for="itemNotes">Notes</label>
+              <input id="itemNotes" placeholder="Brand, preferred package size..." />
+            </div>
+          </div>
+
+          <div style="display:flex;gap:var(--space-2);margin-top:var(--space-2);">
+            <button class="btn primary" type="submit" id="submitBtn" style="flex:1;">Add Item</button>
+            <button class="btn hidden" type="button" id="cancelEditBtn" onclick="resetForm()">Cancel</button>
+          </div>
+        </form>
+      </aside>
     </main>
 
-    <!-- 2. INVENTORY VIEW -->
-    <main id="view-inventory" class="view-content">
-      <input type="search" id="inventory-search" class="search-input" placeholder="Search pantry, fridge, produce..." oninput="filterInventory()">
-      
-      <!-- Location Chips -->
-      <div class="filter-scroll" id="location-filters">
-        <button class="chip active" onclick="setFilter('location', 'All', this)">All Locations</button>
-        <button class="chip" onclick="setFilter('location', 'Pantry', this)">Pantry</button>
-        <button class="chip" onclick="setFilter('location', 'Fresh Produce', this)">Fresh Produce</button>
-        <button class="chip" onclick="setFilter('location', 'Fridge', this)">Fridge</button>
-        <button class="chip" onclick="setFilter('location', 'Freezer', this)">Freezer</button>
-        <button class="chip" onclick="setFilter('location', 'Spice Rack', this)">Spice Rack</button>
+    <nav class="bottomnav" aria-label="Primary navigation">
+      <div class="bottomnav-inner">
+        <button class="navbtn active" data-nav="shopping"><span>🛒</span>Shop</button>
+        <button class="navbtn" data-nav="inventory"><span>📦</span>Pantry</button>
+        <button class="navbtn" data-nav="cart"><span>✅</span>Cart</button>
+        <button class="navbtn" data-nav="add" onclick="startAdd()"><span>➕</span>Add</button>
       </div>
-
-      <div id="inventory-list">
-        <!-- Rendered inventory cards -->
-      </div>
-
-      <!-- Guided Empty State -->
-      <div id="inventory-empty" class="empty-state" style="display: none;">
-        <h3>No items found</h3>
-        <p style="color: var(--muted); font-size: 0.875rem;">Start adding your items or clear active filters.</p>
-        <button class="btn-primary" onclick="openAddModal()">Add Item</button>
-      </div>
-    </main>
-
-    <!-- 3. SHOPPING VIEW -->
-    <main id="view-shopping" class="view-content">
-      <h2 style="font-size: 1.25rem; margin-top: 0;">Shopping List</h2>
-      <p style="color: var(--muted); font-size: 0.875rem;">Checking off an item updates its stock and returns it to inventory.</p>
-
-      <div id="shopping-list">
-        <!-- Rendered shopping list cards -->
-      </div>
-
-      <div id="shopping-empty" class="empty-state" style="display: none;">
-        <h3>Your shopping list is clear!</h3>
-        <p style="color: var(--muted); font-size: 0.875rem;">All your stock levels are well supplied.</p>
-      </div>
-    </main>
-
-    <!-- 4. MORE / SETTINGS VIEW -->
-    <main id="view-more" class="view-content">
-      <h2 style="font-size: 1.25rem; margin-top: 0;">Settings & Data</h2>
-      <div class="dashboard-card">
-        <strong>Storage Locations</strong>
-        <p style="font-size: 0.875rem; color: var(--muted); margin: 4px 0 0 0;">Pantry, Fresh Produce, Fridge, Freezer, Spice Rack</p>
-      </div>
-      <div class="dashboard-card">
-        <strong>Google Sheets Sync</strong>
-        <p style="font-size: 0.875rem; color: var(--muted); margin: 4px 0 0 0;">Connected via Netlify Functions</p>
-      </div>
-    </main>
+    </nav>
   </div>
 
-  <!-- COMPACT BOTTOM NAVIGATION -->
-  <nav class="bottom-nav">
-    <button class="nav-item active" onclick="switchTab('today', this)">
-      <span style="font-size: 1.2rem;">🏠</span>
-      <span>Today</span>
-    </button>
-    <button class="nav-item" onclick="switchTab('inventory', this)">
-      <span style="font-size: 1.2rem;">📦</span>
-      <span>Inventory</span>
-    </button>
-    <button class="nav-item" onclick="switchTab('shopping', this)">
-      <span style="font-size: 1.2rem;">🛒</span>
-      <span>Shopping</span>
-    </button>
-    <button class="nav-item" onclick="switchTab('more', this)">
-      <span style="font-size: 1.2rem;">⚙️</span>
-      <span>More</span>
-    </button>
-  </nav>
+  <div id="toast" class="toast hidden">
+    <span id="toastMsg"></span>
+    <button id="toastAction" class="btn small primary"></button>
+  </div>
 
   <script>
-    // Tab switching logic
-    function switchTab(tabName, navElement) {
-      document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      
-      document.getElementById(`view-${tabName}`).classList.add('active');
-      
-      if (navElement) {
-        navElement.classList.add('active');
+    const STORAGE_KEY = 'larder-flow:items:v2';
+
+    // Default Practical Pantry Seed Data
+    const seedItems = [
+      { id: 'eggs', item: 'Eggs', location: 'Fridge', category: 'Dairy', qtyMode: 'exact', qty: '12 eggs', status: 'OK', inCart: false, notes: 'Pasture raised' },
+      { id: 'olive-oil', item: 'Extra Virgin Olive Oil', location: 'Pantry', category: 'Spices & Condiments', qtyMode: 'qualitative', qty: 'Low', status: 'Low', inCart: false, notes: '' },
+      { id: 'tuna-cans', item: 'Albacore Tuna', location: 'Pantry', category: 'Canned & Jarred', qtyMode: 'exact', qty: '3 cans', status: 'OK', inCart: false, notes: '' },
+      { id: 'milk', item: 'Whole Milk', location: 'Fridge', category: 'Dairy', qtyMode: 'qualitative', qty: 'Out', status: 'Out', inCart: false, notes: '' },
+      { id: 'bananas', item: 'Bananas', location: 'Fresh Produce', category: 'Produce', qtyMode: 'exact', qty: '1 bunch', status: 'Low', inCart: false, notes: '' }
+    ];
+
+    let items = loadStore();
+    let activeFilter = 'shopping';
+    let currentLevel = 'Half';
+    let editingId = null;
+
+    function keyOf(name) { return String(name || '').trim().toLowerCase(); }
+
+    function loadStore() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : seedItems;
+      } catch { return seedItems; }
+    }
+
+    function saveStore() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+    }
+
+    // Rules-Based Status Calculation (Explicit text, non-color dependent)
+    function computeStatus(item) {
+      if (item.qtyMode === 'qualitative') {
+        if (item.qty === 'Out') return 'Out';
+        if (item.qty === 'Low') return 'Low';
+        return 'OK';
+      }
+      if (item.status === 'Out' || item.qty === '0') return 'Out';
+      if (item.status === 'Low') return 'Low';
+      return 'OK';
+    }
+
+    function renderStats() {
+      document.getElementById('needCount').textContent = items.filter(i => computeStatus(i) !== 'OK').length;
+      document.getElementById('cartCount').textContent = items.filter(i => i.inCart).length;
+      document.getElementById('allCount').textContent = items.length;
+    }
+
+    function renderList() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const listEl = document.getElementById('list');
+      const emptyEl = document.getElementById('emptyState');
+
+      const filtered = items.filter(i => {
+        const status = computeStatus(i);
+        const matchSearch = !q || [i.item, i.location, i.category, i.notes].join(' ').toLowerCase().includes(q);
+        if (!matchSearch) return false;
+        if (activeFilter === 'shopping') return status !== 'OK' || i.inCart;
+        if (activeFilter === 'out') return status === 'Out';
+        if (activeFilter === 'low') return status === 'Low';
+        if (activeFilter === 'cart') return i.inCart;
+        return true;
+      });
+
+      document.getElementById('listCount').textContent = `${filtered.length} item${filtered.length === 1 ? '' : 's'}`;
+      listEl.innerHTML = '';
+
+      if (filtered.length === 0) {
+        emptyEl.classList.remove('hidden');
       } else {
-        // Find matching nav element if switchTab was called programmatically
-        const navIndex = ['today', 'inventory', 'shopping', 'more'].indexOf(tabName);
-        if (navIndex !== -1) {
-          document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
+        emptyEl.classList.add('hidden');
+        filtered.forEach(item => listEl.appendChild(createCard(item)));
+      }
+
+      renderStats();
+    }
+
+    function createCard(item) {
+      const status = computeStatus(item);
+      const card = document.createElement('article');
+      card.className = `card ${item.inCart ? 'in-cart' : ''}`;
+      card.dataset.status = status;
+
+      card.innerHTML = `
+        <div class="row">
+          <div>
+            <h3 class="item-name">
+              <button class="namebtn" type="button" onclick="startEdit('${item.id}')">${escapeHtml(item.item)}</button>
+            </h3>
+            <div class="meta">
+              <span class="pill">${escapeHtml(item.location)}</span>
+              <span class="pill status-pill ${status.toLowerCase()}">${status === 'Out' ? 'Out of stock' : status === 'Low' ? 'Low stock' : 'In stock'}</span>
+              <span class="pill" style="font-weight:700;">Qty: ${escapeHtml(item.qty)}</span>
+              ${item.expiry ? `<span class="pill" style="color:var(--color-out)">Exp: ${item.expiry}</span>` : ''}
+            </div>
+          </div>
+          <button class="btn small ${item.inCart ? '' : 'primary'}" onclick="toggleCart('${item.id}')">
+            ${item.inCart ? '✓ In Cart' : '+ To List'}
+          </button>
+        </div>
+        ${item.inCart ? `
+          <div class="restock-banner">
+            <span>Purchased! Add back to Pantry?</span>
+            <div style="display:flex;gap:var(--space-1);">
+              <button class="btn small primary" onclick="quickRestock('${item.id}', 'Full')">Set Full</button>
+              <button class="btn small" onclick="quickRestock('${item.id}', 'Half')">+1 / Half</button>
+            </div>
+          </div>
+        ` : `
+          <div class="actions">
+            <div class="segmented">
+              <button class="${item.qty === 'Full' ? 'active' : ''}" onclick="quickUpdateQty('${item.id}', 'Full')">Full</button>
+              <button class="${item.qty === 'Half' ? 'active' : ''}" onclick="quickUpdateQty('${item.id}', 'Half')">Half</button>
+              <button class="${item.qty === 'Low' ? 'active' : ''}" onclick="quickUpdateQty('${item.id}', 'Low')">Low</button>
+              <button class="${item.qty === 'Out' ? 'active' : ''}" onclick="quickUpdateQty('${item.id}', 'Out')">Out</button>
+            </div>
+            <button class="btn small" onclick="deleteItem('${item.id}')" style="margin-left:auto;">Delete</button>
+          </div>
+        `}
+      `;
+      return card;
+    }
+
+    // Fast-Entry & Form Controls
+    function toggleQtyMode(mode) {
+      document.getElementById('qtyQualitative').classList.toggle('hidden', mode !== 'qualitative');
+      document.getElementById('qtyExact').classList.toggle('hidden', mode !== 'exact');
+    }
+
+    function setLevel(lvl, btn) {
+      currentLevel = lvl;
+      document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+
+    function toggleAdvancedFields() {
+      const adv = document.getElementById('advancedFields');
+      const btn = document.getElementById('toggleMoreBtn');
+      const isHidden = adv.classList.toggle('hidden');
+      btn.textContent = isHidden ? '+ More options (Expiry, Category, Notes, Barcode)' : '– Fewer options';
+    }
+
+    function quickUpdateQty(id, level) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+      item.qtyMode = 'qualitative';
+      item.qty = level;
+      item.status = computeStatus(item);
+      saveStore();
+      renderList();
+    }
+
+    function toggleCart(id) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+      item.inCart = !item.inCart;
+      saveStore();
+      renderList();
+    }
+
+    function quickRestock(id, newLevel) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+      item.qtyMode = 'qualitative';
+      item.qty = newLevel;
+      item.status = 'OK';
+      item.inCart = false;
+      saveStore();
+      renderList();
+      showToast(`Restocked ${item.item} as ${newLevel}`);
+    }
+
+    function startAdd() {
+      resetForm();
+      document.getElementById('itemForm').scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('itemName').focus();
+    }
+
+    function startEdit(id) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+      editingId = id;
+      document.getElementById('formTitle').textContent = 'Edit Item';
+      document.getElementById('itemName').value = item.item;
+      document.getElementById('itemLocation').value = item.location;
+      document.getElementById('submitBtn').textContent = 'Save Changes';
+      document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+      if (item.qtyMode === 'exact') {
+        document.getElementById('itemQtyMode').value = 'exact';
+        document.getElementById('itemExactQty').value = item.qty;
+        toggleQtyMode('exact');
+      } else {
+        document.getElementById('itemQtyMode').value = 'qualitative';
+        setLevel(item.qty || 'Half');
+        toggleQtyMode('qualitative');
+      }
+
+      document.getElementById('itemForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetForm() {
+      editingId = null;
+      document.getElementById('itemForm').reset();
+      document.getElementById('formTitle').textContent = 'Fast Entry';
+      document.getElementById('submitBtn').textContent = 'Add Item';
+      document.getElementById('cancelEditBtn').classList.add('hidden');
+      setLevel('Half');
+      toggleQtyMode('qualitative');
+    }
+
+    document.getElementById('itemForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('itemName').value.trim();
+      if (!name) return;
+
+      const mode = document.getElementById('itemQtyMode').value;
+      const qty = mode === 'exact' ? (document.getElementById('itemExactQty').value.trim() || '1') : currentLevel;
+
+      if (editingId) {
+        const item = items.find(i => i.id === editingId);
+        if (item) {
+          item.item = name;
+          item.location = document.getElementById('itemLocation').value;
+          item.qtyMode = mode;
+          item.qty = qty;
+          item.category = document.getElementById('itemCategory').value;
+          item.expiry = document.getElementById('itemExpiry').value;
+          item.notes = document.getElementById('itemNotes').value;
+          item.status = computeStatus(item);
         }
+      } else {
+        const newItem = {
+          id: keyOf(name),
+          item: name,
+          location: document.getElementById('itemLocation').value,
+          qtyMode: mode,
+          qty: qty,
+          category: document.getElementById('itemCategory').value,
+          expiry: document.getElementById('itemExpiry').value,
+          notes: document.getElementById('itemNotes').value,
+          inCart: false,
+          status: 'OK'
+        };
+        newItem.status = computeStatus(newItem);
+        items.unshift(newItem);
       }
+
+      saveStore();
+      resetForm();
+      renderList();
+      showToast(editingId ? 'Item updated' : 'Item added');
+    });
+
+    function deleteItem(id) {
+      items = items.filter(i => i.id !== id);
+      saveStore();
+      renderList();
+      showToast('Item deleted');
     }
 
-    function setFilter(type, value, element) {
-      if (element) {
-        element.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        element.classList.add('active');
-      }
-      filterInventory();
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastAction').textContent = 'OK';
+      document.getElementById('toastAction').onclick = () => toast.classList.add('hidden');
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3000);
     }
 
-    function filterInventory() {
-      // Inventory filtering handler placeholder
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    function openAddModal() {
-      alert("Add item modal trigger");
-    }
+    // Filter Chips & Navigation Event Listeners
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        activeFilter = chip.dataset.filter;
+        renderList();
+      });
+    });
 
-    // Register Service Worker for PWA / offline support
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js');
-    }
+    document.querySelectorAll('.navbtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!btn.dataset.nav || btn.dataset.nav === 'add') return;
+        document.querySelectorAll('.navbtn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.nav === 'inventory' ? 'all' : btn.dataset.nav;
+        renderList();
+      });
+    });
+
+    document.getElementById('searchInput').addEventListener('input', renderList);
+
+    // Initial load
+    renderList();
   </script>
 </body>
 </html>
